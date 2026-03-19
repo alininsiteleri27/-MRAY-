@@ -189,6 +189,14 @@
             display: flex;
             align-items: center;
             gap: 1rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 12px;
+            transition: all 0.3s;
+        }
+
+        .profile-section:hover {
+            background: rgba(255,255,255,0.05);
         }
 
         .profile-avatar {
@@ -327,13 +335,241 @@
             color: white;
         }
 
-        /* Ana İçerik */
-        .main-content {
-            margin-top: 70px;
-            min-height: calc(100vh - 70px);
+        /* Profil Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
         }
 
-        /* Diğer Stiller (Önceki koddan devam) */
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: rgba(15, 15, 26, 0.95);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.9);
+            transition: transform 0.3s;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            color: var(--secondary);
+        }
+
+        .modal-close {
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .modal-close:hover {
+            background: var(--accent);
+            transform: rotate(90deg);
+        }
+
+        /* Profil Butonları Grid */
+        .profile-actions {
+            display: grid;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .profile-action-btn {
+            padding: 1.2rem;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            text-align: left;
+        }
+
+        .profile-action-btn:hover {
+            background: rgba(108, 92, 231, 0.2);
+            border-color: var(--primary);
+            transform: translateX(5px);
+        }
+
+        .profile-action-btn i {
+            font-size: 1.5rem;
+        }
+
+        /* Form Stilleri */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: rgba(255,255,255,0.9);
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            color: white;
+            font-family: inherit;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--secondary);
+            background: rgba(255,255,255,0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 1rem;
+            background: var(--gradient);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(108, 92, 231, 0.4);
+        }
+
+        /* Profil Kartı Gösterimi */
+        .profile-card {
+            background: rgba(108, 92, 231, 0.1);
+            border: 1px solid var(--primary);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .profile-card h3 {
+            color: var(--secondary);
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .profile-detail {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.8rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .profile-detail:last-child {
+            border-bottom: none;
+        }
+
+        .profile-detail span:first-child {
+            color: rgba(255,255,255,0.7);
+        }
+
+        .profile-detail span:last-child {
+            font-weight: 600;
+            color: var(--secondary);
+        }
+
+        /* Ana Menü Butonları */
+        .main-nav {
+            position: fixed;
+            top: 70px;
+            left: 0;
+            right: 0;
+            background: rgba(15, 15, 26, 0.9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 1rem 5%;
+            z-index: 998;
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            padding: 0.8rem 1.5rem;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 50px;
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-btn:hover, .nav-btn.active {
+            background: var(--gradient);
+            border-color: transparent;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(108, 92, 231, 0.3);
+        }
+
+        /* Ana İçerik */
+        .main-content {
+            margin-top: 140px;
+            min-height: calc(100vh - 140px);
+            padding: 2rem 5%;
+        }
+
+        /* Diğer Stiller */
         .bg-animation {
             position: fixed;
             top: 0;
@@ -359,12 +595,11 @@
         }
 
         .hero {
-            min-height: calc(100vh - 70px);
+            min-height: calc(100vh - 140px);
             display: flex;
             align-items: center;
             justify-content: center;
             text-align: center;
-            padding: 0 5%;
         }
 
         .hero-content h1 {
@@ -384,6 +619,28 @@
             .sidebar {
                 width: 100%;
             }
+
+            .main-nav {
+                gap: 0.5rem;
+            }
+
+            .nav-btn {
+                padding: 0.6rem 1rem;
+                font-size: 0.9rem;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Gizli class */
+        .hidden-section {
+            display: none;
+        }
+
+        .hidden-section.active {
+            display: block;
         }
     </style>
 </head>
@@ -425,11 +682,11 @@
         <!-- Top Bar -->
         <header class="top-bar">
             <!-- Sol Üst - Profil -->
-            <div class="profile-section">
+            <div class="profile-section" id="profileSection">
                 <div class="profile-avatar" id="profileAvatar">9</div>
                 <div class="profile-info">
                     <span class="profile-class" id="profileClass">9. Sınıf</span>
-                    <span class="profile-role">Öğrenci</span>
+                    <span class="profile-role" id="profileRole">Öğrenci</span>
                 </div>
             </div>
 
@@ -440,6 +697,22 @@
                 <span></span>
             </button>
         </header>
+
+        <!-- Ana Menü Butonları -->
+        <nav class="main-nav">
+            <button class="nav-btn active" data-section="dersler">
+                📚 Dersler
+            </button>
+            <button class="nav-btn" data-section="kitaplar">
+                📖 Kitaplar
+            </button>
+            <button class="nav-btn" data-section="odevler">
+                📝 Ödevler
+            </button>
+            <button class="nav-btn" data-section="notlar">
+                📊 Notlar
+            </button>
+        </nav>
 
         <!-- Yan Menü -->
         <nav class="sidebar" id="sidebar">
@@ -458,13 +731,149 @@
 
         <!-- Ana İçerik -->
         <main class="main-content">
-            <section class="hero" id="home">
-                <div class="hero-content">
-                    <h1 id="welcomeText">9. Sınıf Platformu</h1>
-                    <p>Belge ve oyun içeriklerine erişmek için menüyü kullanın.</p>
+            <!-- Dersler Bölümü -->
+            <section class="hidden-section active" id="dersler">
+                <div class="hero">
+                    <div class="hero-content">
+                        <h1>Dersler</h1>
+                        <p>Sınıfınıza özel ders içerikleri ve materyaller.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Kitaplar Bölümü -->
+            <section class="hidden-section" id="kitaplar">
+                <div class="hero">
+                    <div class="hero-content">
+                        <h1>Kitaplar</h1>
+                        <p>Okuma listesi ve kaynak kitaplar.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Ödevler Bölümü -->
+            <section class="hidden-section" id="odevler">
+                <div class="hero">
+                    <div class="hero-content">
+                        <h1>Ödevler</h1>
+                        <p>Güncel ödevler ve teslim tarihleri.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Notlar Bölümü -->
+            <section class="hidden-section" id="notlar">
+                <div class="hero">
+                    <div class="hero-content">
+                        <h1>Notlar</h1>
+                        <p>Sınav notları ve değerlendirmeler.</p>
+                    </div>
                 </div>
             </section>
         </main>
+    </div>
+
+    <!-- Profil Modal -->
+    <div class="modal-overlay" id="profileModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Profil Menüsü</h2>
+                <button class="modal-close" id="modalClose">×</button>
+            </div>
+
+            <!-- Profil Butonları -->
+            <div class="profile-actions" id="profileActions">
+                <button class="profile-action-btn" id="createProfileBtn">
+                    <span>👤</span>
+                    <div>
+                        <div style="font-weight: 600;">Kendi Profilini Oluştur</div>
+                        <div style="font-size: 0.85rem; opacity: 0.7;">Kişisel bilgilerini ekle</div>
+                    </div>
+                </button>
+                <button class="profile-action-btn" id="changeClassBtn">
+                    <span>🔄</span>
+                    <div>
+                        <div style="font-weight: 600;">Sınıf Değiştir</div>
+                        <div style="font-size: 0.85rem; opacity: 0.7;">Farklı bir sınıfa geç</div>
+                    </div>
+                </button>
+                <button class="profile-action-btn" id="teacherModeBtn">
+                    <span>👨‍🏫</span>
+                    <div>
+                        <div style="font-weight: 600;">Öğretmen Oturumu</div>
+                        <div style="font-size: 0.85rem; opacity: 0.7;">Öğretmen görünümüne geç</div>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Profil Oluşturma Formu -->
+            <div id="profileFormSection" style="display: none;">
+                <h3 style="color: var(--secondary); margin-bottom: 1.5rem;">Profil Bilgileri</h3>
+                <form id="profileForm">
+                    <div class="form-group">
+                        <label for="schoolNumber">Okul Numarası</label>
+                        <input type="text" id="schoolNumber" placeholder="Örn: 1234" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="fullName">İsim Soyisim</label>
+                        <input type="text" id="fullName" placeholder="Ad Soyad" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="studentClass">Sınıf</label>
+                        <input type="text" id="studentClass" readonly>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="average">Ortalama</label>
+                            <input type="number" id="average" placeholder="85.5" step="0.1" min="0" max="100">
+                        </div>
+                        <div class="form-group">
+                            <label for="net">Netim</label>
+                            <input type="number" id="net" placeholder="75.5" step="0.1" min="0">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="score">Puanım</label>
+                        <input type="number" id="score" placeholder="450" min="0">
+                    </div>
+                    
+                    <button type="submit" class="submit-btn">Profili Kaydet 💾</button>
+                </form>
+
+                <!-- Profil Kartı -->
+                <div class="profile-card" id="profileCard" style="display: none;">
+                    <h3>📋 Profil Özeti</h3>
+                    <div class="profile-detail">
+                        <span>Okul No:</span>
+                        <span id="displaySchoolNumber">-</span>
+                    </div>
+                    <div class="profile-detail">
+                        <span>İsim Soyisim:</span>
+                        <span id="displayFullName">-</span>
+                    </div>
+                    <div class="profile-detail">
+                        <span>Sınıf:</span>
+                        <span id="displayClass">-</span>
+                    </div>
+                    <div class="profile-detail">
+                        <span>Ortalama:</span>
+                        <span id="displayAverage">-</span>
+                    </div>
+                    <div class="profile-detail">
+                        <span>Net:</span>
+                        <span id="displayNet">-</span>
+                    </div>
+                    <div class="profile-detail">
+                        <span>Puan:</span>
+                        <span id="displayScore">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -475,16 +884,15 @@
         const appContainer = document.getElementById('appContainer');
         
         let selectedClass = null;
+        let userProfile = null;
+        let isTeacherMode = false;
 
         // Sınıf butonlarına tıklama
         classBtns.forEach(btn => {
             btn.addEventListener('click', () => {
-                // Aktif sınıfı kaldır
                 classBtns.forEach(b => b.classList.remove('active'));
-                // Yeni sınıfı aktif et
                 btn.classList.add('active');
                 selectedClass = btn.dataset.class;
-                // Giriş butonunu göster
                 loginBtn.classList.add('visible');
             });
         });
@@ -492,10 +900,7 @@
         // Giriş yap
         loginBtn.addEventListener('click', () => {
             if (selectedClass) {
-                // localStorage'a kaydet
                 localStorage.setItem('userClass', selectedClass);
-                
-                // Ekran geçişi
                 loginScreen.classList.add('hidden');
                 setTimeout(() => {
                     appContainer.classList.add('visible');
@@ -506,11 +911,17 @@
 
         // Uygulamayı başlat
         function initializeApp(userClass) {
-            // Profil bilgilerini güncelle
             document.getElementById('profileAvatar').textContent = userClass;
             document.getElementById('profileClass').textContent = userClass + '. Sınıf';
-            document.getElementById('welcomeText').textContent = userClass + '. Sınıf Platformu';
+            document.getElementById('studentClass').value = userClass + '. Sınıf';
             
+            // Kayıtlı profil varsa yükle
+            const savedProfile = localStorage.getItem('userProfile');
+            if (savedProfile) {
+                userProfile = JSON.parse(savedProfile);
+                updateProfileDisplay();
+            }
+
             // Arka plan animasyonu
             const bgAnimation = document.getElementById('bgAnimation');
             for (let i = 0; i < 15; i++) {
@@ -531,9 +942,150 @@
             sidebar.classList.toggle('open');
         });
 
+        // Ana menü butonları
+        const navBtns = document.querySelectorAll('.nav-btn');
+        const sections = document.querySelectorAll('.hidden-section');
+
+        navBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                navBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                const targetSection = btn.dataset.section;
+                sections.forEach(section => {
+                    section.classList.remove('active');
+                    if (section.id === targetSection) {
+                        section.classList.add('active');
+                    }
+                });
+            });
+        });
+
+        // Profil Modal
+        const profileSection = document.getElementById('profileSection');
+        const profileModal = document.getElementById('profileModal');
+        const modalClose = document.getElementById('modalClose');
+        const profileActions = document.getElementById('profileActions');
+        const profileFormSection = document.getElementById('profileFormSection');
+        const createProfileBtn = document.getElementById('createProfileBtn');
+        const changeClassBtn = document.getElementById('changeClassBtn');
+        const teacherModeBtn = document.getElementById('teacherModeBtn');
+
+        // Profil bölümüne tıklama
+        profileSection.addEventListener('click', () => {
+            profileModal.classList.add('active');
+            // Her açılışta ana menüyü göster
+            profileActions.style.display = 'grid';
+            profileFormSection.style.display = 'none';
+        });
+
+        // Modal kapat
+        modalClose.addEventListener('click', () => {
+            profileModal.classList.remove('active');
+        });
+
+        // Modal dışına tıklayınca kapat
+        profileModal.addEventListener('click', (e) => {
+            if (e.target === profileModal) {
+                profileModal.classList.remove('active');
+            }
+        });
+
+        // Kendi Profilini Oluştur
+        createProfileBtn.addEventListener('click', () => {
+            profileActions.style.display = 'none';
+            profileFormSection.style.display = 'block';
+            
+            // Varsa mevcut verileri doldur
+            if (userProfile) {
+                document.getElementById('schoolNumber').value = userProfile.schoolNumber || '';
+                document.getElementById('fullName').value = userProfile.fullName || '';
+                document.getElementById('average').value = userProfile.average || '';
+                document.getElementById('net').value = userProfile.net || '';
+                document.getElementById('score').value = userProfile.score || '';
+            }
+        });
+
+        // Profil Formu Gönder
+        const profileForm = document.getElementById('profileForm');
+        const profileCard = document.getElementById('profileCard');
+
+        profileForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            userProfile = {
+                schoolNumber: document.getElementById('schoolNumber').value,
+                fullName: document.getElementById('fullName').value,
+                class: document.getElementById('studentClass').value,
+                average: document.getElementById('average').value,
+                net: document.getElementById('net').value,
+                score: document.getElementById('score').value
+            };
+            
+            localStorage.setItem('userProfile', JSON.stringify(userProfile));
+            updateProfileDisplay();
+            
+            // Profil kartını göster
+            profileCard.style.display = 'block';
+            
+            // Başarı mesajı
+            setTimeout(() => {
+                alert('Profil başarıyla kaydedildi! ✅');
+            }, 300);
+        });
+
+        // Profil görünümünü güncelle
+        function updateProfileDisplay() {
+            if (!userProfile) return;
+            
+            document.getElementById('displaySchoolNumber').textContent = userProfile.schoolNumber;
+            document.getElementById('displayFullName').textContent = userProfile.fullName;
+            document.getElementById('displayClass').textContent = userProfile.class;
+            document.getElementById('displayAverage').textContent = userProfile.average || '-';
+            document.getElementById('displayNet').textContent = userProfile.net || '-';
+            document.getElementById('displayScore').textContent = userProfile.score || '-';
+            
+            // Profil kartını göster
+            profileCard.style.display = 'block';
+            
+            // Top bar'ı güncelle
+            if (userProfile.fullName) {
+                document.getElementById('profileRole').textContent = userProfile.fullName;
+            }
+        }
+
+        // Sınıf Değiştir
+        changeClassBtn.addEventListener('click', () => {
+            if (confirm('Sınıf değiştirmek için çıkış yapmanız gerekiyor. Onaylıyor musunuz?')) {
+                localStorage.removeItem('userClass');
+                localStorage.removeItem('userProfile');
+                location.reload();
+            }
+        });
+
+        // Öğretmen Oturumu
+        teacherModeBtn.addEventListener('click', () => {
+            isTeacherMode = !isTeacherMode;
+            
+            if (isTeacherMode) {
+                document.getElementById('profileRole').textContent = 'Öğretmen';
+                document.body.style.setProperty('--primary', '#FF6B6B');
+                document.body.style.setProperty('--gradient', 'linear-gradient(135deg, #FF6B6B 0%, #FFE66D 100%)');
+                alert('Öğretmen moduna geçildi! 👨‍🏫');
+            } else {
+                document.getElementById('profileRole').textContent = userProfile ? userProfile.fullName : 'Öğrenci';
+                document.body.style.setProperty('--primary', '#6C5CE7');
+                document.body.style.setProperty('--gradient', 'linear-gradient(135deg, #6C5CE7 0%, #00D9FF 100%)');
+                alert('Öğrenci moduna dönüldü! 👨‍🎓');
+            }
+            
+            profileModal.classList.remove('active');
+        });
+
         // Çıkış yap
         document.getElementById('logoutBtn').addEventListener('click', () => {
             localStorage.removeItem('userClass');
+            localStorage.removeItem('userProfile');
             location.reload();
         });
 
@@ -541,7 +1093,6 @@
         window.addEventListener('load', () => {
             const savedClass = localStorage.getItem('userClass');
             if (savedClass) {
-                // Önceki oturum varsa direkt aç
                 loginScreen.classList.add('hidden');
                 appContainer.classList.add('visible');
                 initializeApp(savedClass);

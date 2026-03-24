@@ -1,1171 +1,1450 @@
-// ================================
-// EDUHUB - EĞİTİM PLATFORMU APP
-// ================================
+// ═══════════════════════════════════════════════════════════════════
+//  STUDYHUB — app.js
+//  Firebase bağlantısı boş bırakıldı. Kendi config'ini ekle.
+// ═══════════════════════════════════════════════════════════════════
 
-// Firebase Configuration - Daha sonra doldurulacak
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyD36TC6n4kR6wBoiownR7L2iCQyBrAwq1k",
-  authDomain: "a-79192.firebaseapp.com",
-  databaseURL: "https://a-79192-default-rtdb.firebaseio.com",
-  projectId: "a-79192",
-  storageBucket: "a-79192.firebasestorage.app",
-  messagingSenderId: "29833951990",
-  appId: "1:29833951990:web:36cda4e2ce8fb9ef4b4ad7",
-  measurementId: "G-7J1189L9M6"
+// ─── FIREBASE IMPORTS — KENDİ PAKETLERINI BURAYA EKLE ───────────
+// import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+//          sendPasswordResetEmail, onAuthStateChanged, signOut } from "firebase/auth";
+// import { getFirestore, doc, setDoc, getDoc, updateDoc, collection,
+//          query, orderBy, onSnapshot, addDoc, serverTimestamp, getDocs } from "firebase/firestore";
+// import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+
+// ─── APP STATE ──────────────────────────────────────────────────
+const State = {
+  user: null,         // { uid, username, email, role, avatar, bio, birthdate, score, solved, usernameChangedAt, blocked:[] }
+  users: {},          // uid → userdata cache
+  currentPage: 'chat',
+  sidebar: false,
+  notifications: [],
+  dmTarget: null,     // { uid, username }
+  currentTest: null,  // { id, title, questions:[], answers:{} }
+  uploadType: null,
+  timer: { interval: null, seconds: 0, running: false },
+  drawing: { canvas: null, ctx: null, painting: false, tool: 'pen' },
+  settings: { darkMode: true, accentColor: '#f0c040', notifSound: true, msgSound: true, bgMusic: false, fontSize: 14 },
+  blocked: [],
+  yksDate: null,
 };
 
-// Initialize Firebase (Şimdilik devre dışı)
-// firebase.initializeApp(firebaseConfig);
-// const auth = firebase.auth();
-// const db = firebase.firestore();
-// const storage = firebase.storage();
-
-// ================================
-// GLOBAL STATE
-// ================================
-let currentUser = null;
-let isAdmin = false;
-let isTeacher = false;
-let darkMode = false;
-let soundEnabled = true;
-let musicEnabled = false;
-let currentTool = 'pen';
-let drawing = false;
-let lastUsernameChange = null;
-let blockedUsers = [];
-let messages = [];
-let currentTest = null;
-
-// Demo data
-const demoUsers = [
-    { id: '1', username: 'admin', role: 'admin', avatar: 'https://via.placeholder.com/100/6366f1/ffffff?text=A', bio: 'Site Yöneticisi', birthdate: '1990-01-01', points: 9999 },
-    { id: '2', username: 'ogretmen1', role: 'teacher', avatar: 'https://via.placeholder.com/100/10b981/ffffff?text=O', bio: 'Matematik Öğretmeni', birthdate: '1985-05-15', points: 5000 },
-    { id: '3', username: 'ogrenci1', role: 'student', avatar: 'https://via.placeholder.com/100/ec4899/ffffff?text=S', bio: '12. Sınıf Öğrencisi', birthdate: '2007-08-20', points: 1200 }
+// ─── THEME ACCENTS ──────────────────────────────────────────────
+const ACCENT_COLORS = [
+  { color: '#f0c040', rgb: '240,192,64'  },
+  { color: '#4f9eff', rgb: '79,158,255'  },
+  { color: '#ff6b9d', rgb: '255,107,157' },
+  { color: '#4caf7d', rgb: '76,175,125'  },
+  { color: '#ff8c42', rgb: '255,140,66'  },
+  { color: '#a78bfa', rgb: '167,139,250' },
 ];
 
-// ================================
-// INITIALIZATION
-// ================================
-document.addEventListener('DOMContentLoaded', () => {
-    showLoading();
-    setTimeout(() => {
-        hideLoading();
-        checkAuthState();
-    }, 2000);
+// ─── ZODIAC ─────────────────────────────────────────────────────
+function getZodiac(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  const m = d.getMonth() + 1, day = d.getDate();
+  const signs = [
+    [1,20,'♒ Kova'],[2,19,'♓ Balık'],[3,21,'♈ Koç'],[4,20,'♉ Boğa'],
+    [5,21,'♊ İkizler'],[6,21,'♋ Yengeç'],[7,23,'♌ Aslan'],[8,23,'♍ Başak'],
+    [9,23,'♎ Terazi'],[10,23,'♏ Akrep'],[11,22,'♐ Yay'],[12,22,'♑ Oğlak'],
+    [12,31,'♒ Kova'],
+  ];
+  for (const [sm, sd, name] of signs) {
+    if (m < sm || (m === sm && day <= sd)) return name;
+  }
+  return '♒ Kova';
+}
 
-    initEmojiPicker();
-    initYKSCountdown();
-    loadSettings();
-    initCanvas();
+// ─── LOCAL STORAGE HELPERS (Firebase yerine şimdilik) ───────────
+const LS = {
+  get: (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+  set: (k, v) => { localStorage.setItem(k, JSON.stringify(v)); },
+  del: (k) => { localStorage.removeItem(k); },
+};
+
+// ─── INIT ────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  loadSettings();
+  buildEmojiPicker();
+  buildCalculator();
+  buildColorSwatches();
+  buildFormulas('math');
+  loadYKSDate();
+  startYKSCounter();
+
+  // Try auto-login from localStorage (replace with onAuthStateChanged in Firebase)
+  const saved = LS.get('sh_user');
+  if (saved) {
+    State.user = saved;
+    enterApp();
+  }
 });
 
-function showLoading() {
-    document.getElementById('loading-screen').style.display = 'flex';
+// ═══════════════════════════════════════════════════════════════════
+//  AUTH
+// ═══════════════════════════════════════════════════════════════════
+function switchAuth(form) {
+  ['login-form','register-form','reset-form'].forEach(id => {
+    document.getElementById(id).classList.remove('active');
+  });
+  document.getElementById(`${form}-form`).classList.add('active');
 }
 
-function hideLoading() {
-    document.getElementById('loading-screen').style.opacity = '0';
-    setTimeout(() => {
-        document.getElementById('loading-screen').style.display = 'none';
-    }, 500);
+async function handleLogin() {
+  const u = val('login-username'), p = val('login-password');
+  if (!u || !p) return toast('Kullanıcı adı ve şifre gir.', 'error');
+
+  // ── FIREBASE: signInWithEmailAndPassword(auth, email, password) ──
+  // Şimdilik localStorage demo:
+  const users = LS.get('sh_users') || {};
+  const found = Object.values(users).find(x => (x.username === u || x.email === u) && x.password === p);
+  if (!found) return toast('Kullanıcı adı veya şifre yanlış.', 'error');
+  State.user = { ...found };
+  delete State.user.password;
+  LS.set('sh_user', State.user);
+  enterApp();
 }
 
-// ================================
-// AUTHENTICATION
-// ================================
-function showAuthTab(tab) {
-    document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
-    event.target.classList.add('active');
+async function handleRegister() {
+  const username = val('reg-username').trim();
+  const email = val('reg-email').trim();
+  const birthdate = val('reg-birthdate');
+  const pw = val('reg-password');
+  const pw2 = val('reg-password2');
 
-    document.getElementById('login-form').classList.add('hidden');
-    document.getElementById('register-form').classList.add('hidden');
-    document.getElementById('forgot-form').classList.add('hidden');
+  if (!username || !email || !birthdate || !pw) return toast('Tüm alanları doldur.', 'error');
+  if (pw !== pw2) return toast('Şifreler eşleşmiyor.', 'error');
+  if (pw.length < 6) return toast('Şifre en az 6 karakter olmalı.', 'error');
 
-    if (tab === 'login') document.getElementById('login-form').classList.remove('hidden');
-    else if (tab === 'register') document.getElementById('register-form').classList.remove('hidden');
+  // ── FIREBASE: createUserWithEmailAndPassword ──
+  const users = LS.get('sh_users') || {};
+  const exists = Object.values(users).find(x => x.username === username || x.email === email);
+  if (exists) return toast('Bu kullanıcı adı veya e-posta zaten kullanımda.', 'error');
+
+  const uid = 'u_' + Date.now();
+  const isFirst = Object.keys(users).length === 0; // İlk kayıt → admin
+
+  const newUser = {
+    uid, username, email, birthdate, password: pw,
+    role: isFirst ? 'admin' : 'student',
+    avatar: null, bio: '', score: 0, solved: 0,
+    joinDate: new Date().toISOString(),
+    usernameChangedAt: null, blocked: [],
+  };
+  users[uid] = newUser;
+  LS.set('sh_users', users);
+
+  State.user = { ...newUser };
+  delete State.user.password;
+  LS.set('sh_user', State.user);
+  toast('Kayıt başarılı! 🎉', 'success');
+  enterApp();
 }
 
-function showForgotPassword() {
-    document.getElementById('login-form').classList.add('hidden');
-    document.getElementById('forgot-form').classList.remove('hidden');
+async function handlePasswordReset() {
+  const email = val('reset-email');
+  if (!email) return toast('E-posta adresini gir.', 'error');
+  // ── FIREBASE: sendPasswordResetEmail(auth, email) ──
+  toast('Şifre sıfırlama e-postası gönderildi (Firebase ile çalışır).', 'success');
 }
 
-function togglePassword(inputId) {
-    const input = document.getElementById(inputId);
-    const icon = event.target;
-
-    if (input.type === 'password') {
-        input.type = 'text';
-        icon.classList.remove('fa-eye');
-        icon.classList.add('fa-eye-slash');
-    } else {
-        input.type = 'password';
-        icon.classList.remove('fa-eye-slash');
-        icon.classList.add('fa-eye');
-    }
+function handleLogout() {
+  // ── FIREBASE: signOut(auth) ──
+  LS.del('sh_user');
+  State.user = null;
+  document.getElementById('app').classList.add('hidden');
+  document.getElementById('auth-overlay').classList.add('active');
+  switchAuth('login');
 }
 
-// Login Form
-document.getElementById('login-form')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const username = document.getElementById('login-username').value;
-    const password = document.getElementById('login-password').value;
-
-    // Demo login - Gerçek uygulamada Firebase Auth kullanılacak
-    const user = demoUsers.find(u => u.username === username);
-
-    if (user && password.length >= 6) {
-        currentUser = user;
-        isAdmin = user.role === 'admin';
-        isTeacher = user.role === 'teacher' || user.role === 'admin';
-
-        showToast('Başarıyla giriş yapıldı!', 'success');
-        showMainApp();
-        updateUI();
-    } else {
-        showToast('Kullanıcı adı veya şifre hatalı!', 'error');
-        shakeElement(document.getElementById('login-form'));
-    }
-});
-
-// Register Form
-document.getElementById('register-form')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const username = document.getElementById('reg-username').value;
-    const email = document.getElementById('reg-email').value;
-    const password = document.getElementById('reg-password').value;
-    const birthdate = document.getElementById('reg-birthdate').value;
-    const avatarFile = document.getElementById('reg-avatar').files[0];
-
-    if (password.length < 6) {
-        showToast('Şifre en az 6 karakter olmalı!', 'error');
-        return;
-    }
-
-    // Demo registration
-    const newUser = {
-        id: Date.now().toString(),
-        username: username,
-        email: email,
-        role: 'student',
-        bio: 'Henüz açıklama eklenmemiş.',
-        birthdate: birthdate,
-        points: 0,
-        avatar: 'https://via.placeholder.com/100/6366f1/ffffff?text=' + username.charAt(0).toUpperCase(),
-        zodiac: calculateZodiac(birthdate)
-    };
-
-    currentUser = newUser;
-    showToast('Kayıt başarılı! Hoş geldiniz.', 'success');
-    showMainApp();
-    updateUI();
-});
-
-// Forgot Password
-document.getElementById('forgot-form')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const email = document.getElementById('forgot-email').value;
-
-    // Demo - Gerçek uygulamada Firebase şifre sıfırlama
-    showToast('Şifre sıfırlama linki e-posta adresinize gönderildi!', 'success');
-    showAuthTab('login');
-});
-
-function checkAuthState() {
-    // Firebase auth state listener buraya eklenecek
-    // auth.onAuthStateChanged(user => { ... });
+function togglePassword(id) {
+  const el = document.getElementById(id);
+  el.type = el.type === 'password' ? 'text' : 'password';
 }
 
-function showMainApp() {
-    document.getElementById('auth-container').classList.add('hidden');
-    document.getElementById('main-app').classList.remove('hidden');
-    loadMessages();
+// ─── Enter App ───────────────────────────────────────────────────
+function enterApp() {
+  document.getElementById('auth-overlay').classList.remove('active');
+  document.getElementById('app').classList.remove('hidden');
+  updateTopbar();
+  setupAdminUI();
+  loadPage('chat');
+  loadNotifications();
+  updateYKSCounter();
+  loadBlockedList();
+  toast(`Hoş geldin, ${State.user.username}! 👋`, 'success');
 }
 
-function logout() {
-    currentUser = null;
-    isAdmin = false;
-    isTeacher = false;
-    document.getElementById('main-app').classList.add('hidden');
-    document.getElementById('auth-container').classList.remove('hidden');
-    showToast('Çıkış yapıldı', 'info');
+function updateTopbar() {
+  const u = State.user;
+  document.getElementById('topbar-username').textContent = u.username;
+  renderAvatar(document.getElementById('topbar-avatar'), u);
 }
 
-// ================================
-// UI UPDATES
-// ================================
-function updateUI() {
-    if (!currentUser) return;
-
-    // Update header
-    document.getElementById('header-username').textContent = currentUser.username;
-    document.getElementById('header-avatar').src = currentUser.avatar;
-
-    // Update profile panel
-    document.getElementById('profile-name').textContent = currentUser.username;
-    document.getElementById('profile-avatar').src = currentUser.avatar;
-    document.getElementById('profile-role').textContent = getRoleText(currentUser.role);
-    document.getElementById('profile-bio').textContent = currentUser.bio;
-    document.getElementById('profile-zodiac').textContent = 'Burç: ' + (currentUser.zodiac || calculateZodiac(currentUser.birthdate));
-
-    // Show admin elements
-    if (isAdmin) {
-        document.querySelectorAll('.admin-only').forEach(el => {
-            el.classList.remove('hidden');
-            el.classList.add('visible');
-        });
-    }
+function setupAdminUI() {
+  if (['admin','teacher'].includes(State.user.role)) {
+    document.getElementById('admin-section').classList.remove('hidden');
+  }
 }
 
-function getRoleText(role) {
-    const roles = {
-        'admin': 'Yönetici',
-        'teacher': 'Öğretmen',
-        'student': 'Öğrenci'
-    };
-    return roles[role] || 'Öğrenci';
+// ═══════════════════════════════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════════════════════════════
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(a => a.classList.remove('active'));
+
+  const page = document.getElementById(`page-${name}`);
+  if (page) page.classList.add('active');
+
+  const navItem = document.querySelector(`[data-page="${name}"]`);
+  if (navItem) navItem.classList.add('active');
+
+  State.currentPage = name;
+  loadPage(name);
+
+  // Close sidebar on mobile
+  if (window.innerWidth <= 768) toggleSidebar(false);
 }
 
-// ================================
-// PANEL TOGGLES
-// ================================
-function toggleProfile() {
-    const panel = document.getElementById('profile-panel');
-    panel.classList.toggle('active');
-    document.getElementById('menu-panel').classList.remove('active');
+function loadPage(name) {
+  switch(name) {
+    case 'chat':       initChat(); break;
+    case 'tests':      loadContent('tests'); break;
+    case 'testbooks':  loadContent('testbooks'); break;
+    case 'exams':      loadContent('exams'); break;
+    case 'rankings':   loadRankings(); break;
+    case 'teachers':   loadTeachers(); break;
+    case 'writings':   loadContent('writings'); break;
+    case 'schedule':   loadContent('schedule'); break;
+    case 'photos':     loadPhotos(); break;
+    case 'schoolteachers': loadSchoolTeachers(); break;
+    case 'admin-users': loadAdminUsers(); break;
+  }
 }
 
-function toggleMenu() {
-    const panel = document.getElementById('menu-panel');
-    panel.classList.toggle('active');
-    document.getElementById('profile-panel').classList.remove('active');
+function toggleSidebar(force) {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  const open = force !== undefined ? force : !State.sidebar;
+  State.sidebar = open;
+  sidebar.classList.toggle('open', open);
+  overlay.classList.toggle('hidden', !open);
 }
 
-function toggleNotifications() {
-    const panel = document.getElementById('notifications-panel');
-    panel.classList.toggle('active');
-    document.getElementById('menu-panel').classList.remove('active');
+// ═══════════════════════════════════════════════════════════════════
+//  PANELS & MODALS
+// ═══════════════════════════════════════════════════════════════════
+function openPanel(id) {
+  closeAllPanels();
+  document.getElementById(id).classList.remove('hidden');
+  if (id === 'profile-panel') fillProfilePanel();
+  if (id === 'settings-panel') fillSettingsPanel();
+}
+function closePanel(id) { document.getElementById(id).classList.add('hidden'); }
+function closeAllPanels() {
+  ['profile-panel','settings-panel'].forEach(id => closePanel(id));
 }
 
-function toggleSettings() {
-    const panel = document.getElementById('settings-panel');
-    panel.classList.toggle('active');
-    document.getElementById('menu-panel').classList.remove('active');
+function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+// ═══════════════════════════════════════════════════════════════════
+//  PROFILE PANEL
+// ═══════════════════════════════════════════════════════════════════
+function fillProfilePanel() {
+  const u = State.user;
+  renderAvatar(document.getElementById('panel-avatar'), u, true);
+  document.getElementById('panel-username').textContent = u.username;
+  document.getElementById('panel-role-badge').textContent = roleLabel(u.role);
+  document.getElementById('panel-zodiac').textContent = getZodiac(u.birthdate);
+  document.getElementById('panel-bio').value = u.bio || '';
+  document.getElementById('p-score').textContent = u.score || 0;
+  document.getElementById('p-solved').textContent = u.solved || 0;
+  updateRankDisplay();
 }
 
-function toggleFAB() {
-    const fab = document.querySelector('.main-fab');
-    const menu = document.querySelector('.fab-menu');
-    fab.classList.toggle('active');
-    menu.classList.toggle('active');
+function updateRankDisplay() {
+  const users = Object.values(LS.get('sh_users') || {});
+  const sorted = users.sort((a,b) => (b.score||0) - (a.score||0));
+  const rank = sorted.findIndex(u => u.uid === State.user.uid) + 1;
+  document.getElementById('p-rank').textContent = `#${rank}`;
 }
 
-// ================================
-// PROFILE FUNCTIONS
-// ================================
-function editBio() {
-    const newBio = prompt('Yeni açıklamanızı girin:', currentUser.bio);
-    if (newBio && newBio.trim()) {
-        currentUser.bio = newBio.trim();
-        document.getElementById('profile-bio').textContent = currentUser.bio;
-        showToast('Açıklama güncellendi!', 'success');
-    }
+function roleLabel(role) {
+  return { admin: '👑 Yönetici', teacher: '🎓 Öğretmen', student: '📚 Öğrenci' }[role] || '📚 Öğrenci';
+}
+
+function saveBioDraft() {} // auto-save trigger if needed
+function saveBio() {
+  const bio = document.getElementById('panel-bio').value.trim();
+  State.user.bio = bio;
+  LS.set('sh_user', State.user);
+  persistUser();
+  toast('Açıklama kaydedildi.', 'success');
+}
+
+function triggerAvatarUpload() { document.getElementById('avatar-input').click(); }
+function handleAvatarUpload(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const data = ev.target.result;
+    State.user.avatar = data;
+    LS.set('sh_user', State.user);
+    persistUser();
+    renderAvatar(document.getElementById('panel-avatar'), State.user, true);
+    renderAvatar(document.getElementById('topbar-avatar'), State.user);
+    toast('Profil fotoğrafı güncellendi.', 'success');
+    // ── FIREBASE: Storage'a yükle, URL kaydet ──
+  };
+  reader.readAsDataURL(file);
 }
 
 function changeUsername() {
-    const now = Date.now();
-    if (lastUsernameChange && now - lastUsernameChange < 7 * 24 * 60 * 60 * 1000) {
-        const daysLeft = Math.ceil((7 * 24 * 60 * 60 * 1000 - (now - lastUsernameChange)) / (24 * 60 * 60 * 1000));
-        showToast(`Kullanıcı adınızı değiştirmek için ${daysLeft} gün beklemelisiniz!`, 'error');
-        return;
-    }
+  const newName = document.getElementById('new-username-input').value.trim();
+  if (!newName) return toast('Yeni kullanıcı adı gir.', 'error');
+  if (newName.length < 3) return toast('Kullanıcı adı en az 3 karakter olmalı.', 'error');
 
-    const newUsername = prompt('Yeni kullanıcı adınızı girin (haftada 1 kez değiştirilebilir):', currentUser.username);
-    if (newUsername && newUsername.trim() && newUsername.trim() !== currentUser.username) {
-        currentUser.username = newUsername.trim();
-        lastUsernameChange = now;
-        updateUI();
-        showToast('Kullanıcı adı güncellendi!', 'success');
+  const last = State.user.usernameChangedAt;
+  if (last) {
+    const diff = Date.now() - new Date(last).getTime();
+    const week = 7 * 24 * 60 * 60 * 1000;
+    if (diff < week) {
+      const remaining = Math.ceil((week - diff) / (24*60*60*1000));
+      return toast(`Kullanıcı adını değiştirmek için ${remaining} gün beklemelisin.`, 'error');
     }
+  }
+
+  const users = LS.get('sh_users') || {};
+  const taken = Object.values(users).find(u => u.username === newName && u.uid !== State.user.uid);
+  if (taken) return toast('Bu kullanıcı adı zaten alınmış.', 'error');
+
+  State.user.username = newName;
+  State.user.usernameChangedAt = new Date().toISOString();
+  LS.set('sh_user', State.user);
+  persistUser();
+  updateTopbar();
+  document.getElementById('panel-username').textContent = newName;
+  toast('Kullanıcı adı değiştirildi! ✅', 'success');
+  // ── FIREBASE: updateDoc ──
 }
 
-function resetPassword() {
-    const email = prompt('Şifre sıfırlama linki için e-posta adresinizi girin:', currentUser.email || '');
-    if (email) {
-        // Firebase şifre sıfırlama
-        showToast('Şifre sıfırlama linki gönderildi!', 'success');
-    }
+// ─── View other user's profile ───────────────────────────────────
+let _modalUserId = null;
+function openUserProfile(uid) {
+  const users = LS.get('sh_users') || {};
+  const u = users[uid]; if (!u) return;
+  _modalUserId = uid;
+
+  renderAvatar(document.getElementById('modal-user-avatar'), u, true);
+  document.getElementById('modal-user-username').textContent = u.username;
+  document.getElementById('modal-user-role').textContent = roleLabel(u.role);
+  document.getElementById('modal-user-zodiac').textContent = getZodiac(u.birthdate);
+  document.getElementById('modal-user-bio').textContent = u.bio || 'Açıklama yok.';
+  document.getElementById('modal-user-score').textContent = u.score || 0;
+  document.getElementById('modal-user-solved').textContent = u.solved || 0;
+
+  const allUsers = Object.values(users).sort((a,b) => (b.score||0) - (a.score||0));
+  const rank = allUsers.findIndex(x => x.uid === uid) + 1;
+  document.getElementById('modal-user-rank').textContent = `#${rank}`;
+
+  openModal('user-profile-modal');
+}
+function openDMFromModal() {
+  if (!_modalUserId) return;
+  const users = LS.get('sh_users') || {};
+  const u = users[_modalUserId];
+  if (u) { closeModal('user-profile-modal'); openDMModal(_modalUserId, u.username); }
+}
+function blockUserFromModal() {
+  if (!_modalUserId) return;
+  blockUser(_modalUserId);
+  closeModal('user-profile-modal');
 }
 
-function showRanking() {
-    closeAllPanels();
-    document.getElementById('ranking-modal').classList.add('active');
-    loadRanking();
+// ═══════════════════════════════════════════════════════════════════
+//  SETTINGS
+// ═══════════════════════════════════════════════════════════════════
+function loadSettings() {
+  const saved = LS.get('sh_settings');
+  if (saved) Object.assign(State.settings, saved);
+  applySettings();
 }
-
-// ================================
-// YKS COUNTDOWN
-// ================================
-function initYKSCountdown() {
-    // YKS 2026: 20-21 Haziran 2026 - TYT 20 Haziran 2026 10:15
-    const yksDate = new Date('2026-06-20T10:15:00');
-
-    function updateCountdown() {
-        const now = new Date();
-        const diff = yksDate - now;
-
-        if (diff <= 0) {
-            document.getElementById('yks-timer').textContent = 'YKS başladı! Başarılar!';
-            return;
-        }
-
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-        document.getElementById('yks-timer').textContent = 
-            `TYT'ye ${days} gün ${hours} saat ${minutes} dk ${seconds} sn`;
-    }
-
-    updateCountdown();
-    setInterval(updateCountdown, 1000);
+function applySettings() {
+  const s = State.settings;
+  document.documentElement.setAttribute('data-theme', s.darkMode ? 'dark' : 'light');
+  document.documentElement.style.setProperty('--accent', s.accentColor);
+  const rgb = ACCENT_COLORS.find(a => a.color === s.accentColor)?.rgb || '240,192,64';
+  document.documentElement.style.setProperty('--accent-rgb', rgb);
+  document.documentElement.style.fontSize = s.fontSize + 'px';
 }
-
-// ================================
-// CHAT FUNCTIONS
-// ================================
-function initEmojiPicker() {
-    const emojis = ['😀', '😂', '🥰', '😎', '🤔', '👍', '👎', '❤️', '🎉', '🔥', 
-                    '😭', '😡', '👏', '🙏', '💪', '📚', '✅', '❌', '⭐', '💯',
-                    '🤣', '😍', '🥳', '😴', '🤯', '👀', '🎓', '💡', '📝', '🎯'];
-
-    const picker = document.getElementById('emoji-picker');
-    emojis.forEach(emoji => {
-        const span = document.createElement('span');
-        span.textContent = emoji;
-        span.onclick = () => insertEmoji(emoji);
-        picker.appendChild(span);
+function saveSettings() {
+  LS.set('sh_settings', State.settings);
+  applySettings();
+}
+function fillSettingsPanel() {
+  const s = State.settings;
+  const dmToggle = document.getElementById('dark-mode-toggle');
+  if (dmToggle) dmToggle.checked = s.darkMode;
+  document.getElementById('notif-sound-toggle').checked = s.notifSound;
+  document.getElementById('msg-sound-toggle').checked = s.msgSound;
+  document.getElementById('bg-music-toggle').checked = s.bgMusic;
+  document.querySelectorAll('.swatch').forEach(sw => {
+    sw.classList.toggle('active', sw.dataset.color === s.accentColor);
+  });
+}
+function toggleDarkMode(el) {
+  State.settings.darkMode = el.checked;
+  saveSettings();
+}
+function toggleSetting(key, el) {
+  State.settings[key] = el.checked;
+  saveSettings();
+}
+function setFontSize(v) {
+  State.settings.fontSize = parseInt(v);
+  saveSettings();
+}
+function toggleBgMusic(el) {
+  State.settings.bgMusic = el.checked;
+  document.getElementById('music-select-row').style.display = el.checked ? 'flex' : 'none';
+  saveSettings();
+}
+function changeBgMusic(v) { /* implement audio playback */ }
+function buildColorSwatches() {
+  const wrap = document.getElementById('color-swatches'); if (!wrap) return;
+  ACCENT_COLORS.forEach(a => {
+    const s = document.createElement('div');
+    s.className = 'swatch';
+    s.style.background = a.color;
+    s.dataset.color = a.color;
+    s.addEventListener('click', () => {
+      State.settings.accentColor = a.color; saveSettings();
+      document.querySelectorAll('.swatch').forEach(x => x.classList.remove('active'));
+      s.classList.add('active');
     });
+    wrap.appendChild(s);
+  });
 }
 
+// ─── Block / Unblock ─────────────────────────────────────────────
+function blockUser(uid) {
+  const users = LS.get('sh_users') || {};
+  const target = users[uid];
+  if (!target) return;
+  if (!State.blocked.includes(uid)) {
+    State.blocked.push(uid);
+    State.user.blocked = State.blocked;
+    LS.set('sh_user', State.user);
+    persistUser();
+    toast(`${target.username} engellendi.`, 'success');
+    loadBlockedList();
+  }
+}
+function unblockUser(uid) {
+  State.blocked = State.blocked.filter(x => x !== uid);
+  State.user.blocked = State.blocked;
+  LS.set('sh_user', State.user);
+  persistUser();
+  toast('Engel kaldırıldı.', 'success');
+  loadBlockedList();
+}
+function loadBlockedList() {
+  State.blocked = State.user?.blocked || [];
+  const wrap = document.getElementById('blocked-list'); if (!wrap) return;
+  const users = LS.get('sh_users') || {};
+  if (!State.blocked.length) { wrap.innerHTML = '<small style="color:var(--text-muted)">Engellenen kullanıcı yok.</small>'; return; }
+  wrap.innerHTML = State.blocked.map(uid => {
+    const u = users[uid];
+    return `<div class="blocked-item"><span>${u?.username || uid}</span><button class="unblock-btn" onclick="unblockUser('${uid}')">Engeli Kaldır</button></div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  YKS COUNTER
+// ═══════════════════════════════════════════════════════════════════
+function loadYKSDate() {
+  const saved = LS.get('sh_yksdate');
+  if (saved) {
+    State.yksDate = new Date(saved);
+    const input = document.getElementById('yks-date-input');
+    if (input) input.value = saved;
+  }
+}
+function setYKSDate(v) {
+  State.yksDate = new Date(v);
+  LS.set('sh_yksdate', v);
+  updateYKSCounter();
+}
+function startYKSCounter() {
+  updateYKSCounter();
+  setInterval(updateYKSCounter, 60000);
+}
+function updateYKSCounter() {
+  const el = document.getElementById('yks-days'); if (!el) return;
+  if (!State.yksDate) { el.textContent = '?'; return; }
+  const now = new Date();
+  const diff = Math.ceil((State.yksDate - now) / (1000 * 60 * 60 * 24));
+  el.textContent = diff > 0 ? diff : (diff === 0 ? 'Bugün!' : 'Bitti');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  GLOBAL CHAT
+// ═══════════════════════════════════════════════════════════════════
+let chatAttach = null;
+
+function initChat() {
+  loadChatMessages();
+  // ── FIREBASE: onSnapshot(chatRef, ...) ──
+}
+
+function loadChatMessages() {
+  const msgs = LS.get('sh_chat') || [];
+  const container = document.getElementById('chat-messages');
+  // Keep welcome msg
+  const welcome = container.querySelector('.chat-welcome');
+  container.innerHTML = '';
+  if (welcome) container.appendChild(welcome);
+
+  msgs.forEach(m => renderChatMessage(m));
+  container.scrollTop = container.scrollHeight;
+  // Update online count (random for demo)
+  document.getElementById('online-count').textContent = Math.floor(Math.random() * 8) + 1;
+}
+
+function renderChatMessage(msg) {
+  const container = document.getElementById('chat-messages'); if (!container) return;
+  if (State.blocked.includes(msg.uid)) return; // blocked
+
+  const isOwn = msg.uid === State.user?.uid;
+  const div = document.createElement('div');
+  div.className = `chat-msg${isOwn ? ' own' : ''}`;
+
+  let contentHtml = '';
+  if (msg.type === 'image') {
+    contentHtml = `<img src="${sanitize(msg.content)}" alt="resim" />`;
+  } else if (msg.type === 'file') {
+    contentHtml = `<a href="${sanitize(msg.content)}" target="_blank">📎 ${sanitize(msg.filename)}</a>`;
+  } else {
+    contentHtml = sanitize(msg.content);
+  }
+
+  const roleClass = msg.role === 'admin' ? 'role-admin' : msg.role === 'teacher' ? 'role-teacher' : '';
+
+  div.innerHTML = `
+    <div class="msg-avatar" onclick="openUserProfile('${msg.uid}')">
+      <div class="avatar" id="chatavatar-${msg.uid}">${avatarContent(msg)}</div>
+    </div>
+    <div>
+      <div class="msg-meta">
+        <span class="msg-username ${roleClass}" onclick="openUserProfile('${msg.uid}')">${sanitize(msg.username)}</span>
+        <span>${msg.role === 'admin' ? '👑' : msg.role === 'teacher' ? '🎓' : ''}</span>
+        <span>${formatTime(msg.timestamp)}</span>
+      </div>
+      <div class="msg-bubble">${contentHtml}</div>
+    </div>
+  `;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function avatarContent(u) {
+  if (u.avatar) return `<img src="${u.avatar}" />`;
+  return (u.username || '?')[0].toUpperCase();
+}
+
+function handleChatKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); }
+}
+
+function sendChatMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.innerText.trim();
+  if (!text && !chatAttach) return;
+
+  const msg = {
+    uid: State.user.uid,
+    username: State.user.username,
+    role: State.user.role,
+    avatar: State.user.avatar,
+    timestamp: new Date().toISOString(),
+    type: chatAttach ? chatAttach.type : 'text',
+    content: chatAttach ? chatAttach.data : text,
+    filename: chatAttach?.name || null,
+  };
+
+  const msgs = LS.get('sh_chat') || [];
+  msgs.push(msg);
+  // Keep last 500
+  if (msgs.length > 500) msgs.splice(0, msgs.length - 500);
+  LS.set('sh_chat', msgs);
+
+  renderChatMessage(msg);
+  input.innerText = '';
+  clearAttach();
+
+  if (State.settings.msgSound) playSound('msg');
+  // ── FIREBASE: addDoc(chatRef, {...msg, timestamp: serverTimestamp()}) ──
+}
+
+function triggerFileUpload() { document.getElementById('file-input').click(); }
+function triggerGifUpload() {
+  const url = prompt('GIF URL gir:');
+  if (!url) return;
+  chatAttach = { type: 'image', data: url, name: 'gif' };
+  showAttachPreview('🖼️ GIF ekli');
+}
+
+function handleFileAttach(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const isImg = file.type.startsWith('image/');
+    chatAttach = {
+      type: isImg ? 'image' : 'file',
+      data: ev.target.result,
+      name: file.name,
+    };
+    showAttachPreview(`${isImg ? '🖼️' : '📎'} ${file.name}`);
+    // ── FIREBASE: Storage'a yükle, URL al ──
+  };
+  reader.readAsDataURL(file);
+}
+function showAttachPreview(label) {
+  document.getElementById('attach-name').textContent = label;
+  document.getElementById('attach-preview').classList.remove('hidden');
+}
+function clearAttach() {
+  chatAttach = null;
+  document.getElementById('attach-preview').classList.add('hidden');
+  document.getElementById('file-input').value = '';
+}
+
+// ─── Emoji Picker ────────────────────────────────────────────────
+const EMOJIS = ['😀','😂','🥰','😍','🤔','😎','🥳','😅','🤩','😤','👍','👏','🙌','✨','🔥','💯','❤️','💙','💚','💛','🧡','💜','🎉','🎊','🎯','📚','✏️','📝','🔬','🔭','⭐','🌟','💡','🏆','🥇','🎓','📖','🖊️','🧮','📐','📏'];
+function buildEmojiPicker() {
+  const grid = document.getElementById('emoji-grid'); if (!grid) return;
+  EMOJIS.forEach(e => {
+    const span = document.createElement('span');
+    span.textContent = e;
+    span.addEventListener('click', () => insertEmoji(e));
+    grid.appendChild(span);
+  });
+}
 function toggleEmojiPicker() {
-    const picker = document.getElementById('emoji-picker');
-    picker.classList.toggle('hidden');
-    document.getElementById('attach-menu').classList.add('hidden');
+  document.getElementById('emoji-picker').classList.toggle('hidden');
+}
+function insertEmoji(e) {
+  const input = document.getElementById('chat-input');
+  input.innerText += e;
+  input.focus();
 }
 
-function insertEmoji(emoji) {
-    const input = document.getElementById('message-input');
-    input.value += emoji;
-    document.getElementById('emoji-picker').classList.add('hidden');
-    input.focus();
+// ═══════════════════════════════════════════════════════════════════
+//  CONTENT (Tests, Books, Exams, Writings, Schedule)
+// ═══════════════════════════════════════════════════════════════════
+function loadContent(type) {
+  const data = LS.get(`sh_${type}`) || [];
+  const gridId = `${type}-grid`;
+  const grid = document.getElementById(gridId); if (!grid) return;
+
+  if (!data.length) {
+    grid.innerHTML = '<div class="empty-state">Henüz içerik eklenmemiş.</div>';
+    return;
+  }
+
+  grid.innerHTML = data.map(item => `
+    <div class="content-card" onclick="openContent('${type}', '${item.id}')">
+      <span class="card-subject">${item.subject || ''}</span>
+      <h3 class="card-title">${sanitize(item.title)}</h3>
+      <p class="card-desc">${sanitize(item.desc || '')}</p>
+      <div class="card-meta">
+        <span>${item.questionCount ? item.questionCount + ' soru' : ''}</span>
+        <span>${formatDate(item.createdAt)}</span>
+      </div>
+      <button class="card-action">${type === 'tests' || type === 'exams' ? '🚀 Çöz' : '📖 Aç'}</button>
+    </div>
+  `).join('');
+  // ── FIREBASE: getDocs(collection(db, type)) ──
 }
 
-function showAttachMenu() {
-    const menu = document.getElementById('attach-menu');
-    menu.classList.toggle('hidden');
-    document.getElementById('emoji-picker').classList.add('hidden');
+function filterContent(type, q) {
+  const data = (LS.get(`sh_${type}`) || []).filter(item =>
+    item.title.toLowerCase().includes(q.toLowerCase()) ||
+    (item.subject || '').toLowerCase().includes(q.toLowerCase())
+  );
+  const gridId = `${type}-grid`;
+  const grid = document.getElementById(gridId); if (!grid) return;
+  grid.innerHTML = data.map(item => `
+    <div class="content-card" onclick="openContent('${type}', '${item.id}')">
+      <span class="card-subject">${item.subject || ''}</span>
+      <h3 class="card-title">${sanitize(item.title)}</h3>
+      <p class="card-desc">${sanitize(item.desc || '')}</p>
+      <button class="card-action">${type === 'tests' || type === 'exams' ? '🚀 Çöz' : '📖 Aç'}</button>
+    </div>
+  `).join('') || '<div class="empty-state">Sonuç bulunamadı.</div>';
 }
 
-function attachFile() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.onchange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            sendMessage(`📎 Dosya: ${file.name}`);
-        }
-    };
-    input.click();
-    document.getElementById('attach-menu').classList.add('hidden');
+function openContent(type, id) {
+  const data = LS.get(`sh_${type}`) || [];
+  const item = data.find(x => x.id === id); if (!item) return;
+
+  if ((type === 'tests' || type === 'exams') && item.questions?.length) {
+    openTestSolver(item);
+  } else if (item.fileUrl) {
+    window.open(item.fileUrl, '_blank');
+  } else {
+    toast('İçerik bulunamadı.', 'error');
+  }
 }
 
-function attachImage() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                sendMessageWithImage(event.target.result);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-    input.click();
-    document.getElementById('attach-menu').classList.add('hidden');
+// ─── Test Solver ─────────────────────────────────────────────────
+function openTestSolver(test) {
+  State.currentTest = { ...test, answers: {}, startTime: Date.now() };
+  document.getElementById('solver-title').textContent = test.title;
+  renderQuestions(test.questions);
+  showPage('test-solver');
+  resetTimer();
 }
 
-function attachGIF() {
-    const gifUrl = prompt('GIF URL'sini yapıştırın:');
-    if (gifUrl) {
-        sendMessage(`![GIF](${gifUrl})`);
-    }
-    document.getElementById('attach-menu').classList.add('hidden');
+function renderQuestions(questions) {
+  const container = document.getElementById('test-questions');
+  container.innerHTML = questions.map((q, i) => `
+    <div class="question-card" id="qcard-${i}">
+      <div class="question-num">Soru ${i+1}</div>
+      ${q.image ? `<img src="${sanitize(q.image)}" style="max-width:100%;border-radius:8px;margin-bottom:1rem;" />` : ''}
+      <div class="question-text">${sanitize(q.q)}</div>
+      <div class="question-options">
+        ${q.options.map((opt, j) => `
+          <button class="option-btn" onclick="selectAnswer(${i}, ${j})" id="opt-${i}-${j}">
+            <span class="option-letter">${'ABCDE'[j]}</span>
+            ${sanitize(opt)}
+          </button>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+  updateAnswerSummary(questions.length);
 }
 
-function handleMessageKeypress(event) {
-    if (event.key === 'Enter') {
-        sendMessage();
-    }
+function selectAnswer(qi, oi) {
+  State.currentTest.answers[qi] = oi;
+  // Clear other options
+  const q = State.currentTest.questions[qi];
+  q.options.forEach((_, j) => {
+    const btn = document.getElementById(`opt-${qi}-${j}`);
+    if (btn) btn.classList.remove('selected');
+  });
+  const selected = document.getElementById(`opt-${qi}-${oi}`);
+  if (selected) selected.classList.add('selected');
+  updateAnswerSummary(State.currentTest.questions.length);
 }
 
-function sendMessage(content = null) {
-    const input = document.getElementById('message-input');
-    const message = content || input.value.trim();
-
-    if (!message) return;
-
-    const messageData = {
-        id: Date.now(),
-        userId: currentUser.id,
-        username: currentUser.username,
-        avatar: currentUser.avatar,
-        content: message,
-        timestamp: new Date(),
-        type: 'text'
-    };
-
-    messages.push(messageData);
-    displayMessage(messageData);
-
-    if (!content) input.value = '';
-
-    // Scroll to bottom
-    const chatMessages = document.getElementById('chat-messages');
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
-function sendMessageWithImage(imageUrl) {
-    const messageData = {
-        id: Date.now(),
-        userId: currentUser.id,
-        username: currentUser.username,
-        avatar: currentUser.avatar,
-        content: imageUrl,
-        timestamp: new Date(),
-        type: 'image'
-    };
-
-    messages.push(messageData);
-    displayMessage(messageData);
-}
-
-function displayMessage(message) {
-    const chatMessages = document.getElementById('chat-messages');
-    const isOwn = message.userId === currentUser.id;
-
-    const messageDiv = document.createElement('div');
-    messageDiv.className = `message ${isOwn ? 'own' : 'other'}`;
-
-    let contentHtml = '';
-    if (message.type === 'image') {
-        contentHtml = `<img src="${message.content}" alt="Resim">`;
-    } else {
-        contentHtml = `<div class="message-content">${escapeHtml(message.content)}</div>`;
-    }
-
-    messageDiv.innerHTML = `
-        <div class="message-header">
-            <img src="${message.avatar}" alt="${message.username}">
-            <span>${escapeHtml(message.username)}</span>
-        </div>
-        ${contentHtml}
-        <div class="message-time">${formatTime(message.timestamp)}</div>
-    `;
-
-    chatMessages.appendChild(messageDiv);
-}
-
-function loadMessages() {
-    // Demo messages
-    const demoMessages = [
-        {
-            id: 1,
-            userId: '2',
-            username: 'ogretmen1',
-            avatar: 'https://via.placeholder.com/100/10b981/ffffff?text=O',
-            content: 'Herkese başarılar! YKS'ye hazırlık devam ediyor. Sorularınızı buradan sorabilirsiniz. 📚',
-            timestamp: new Date(Date.now() - 3600000),
-            type: 'text'
-        },
-        {
-            id: 2,
-            userId: '3',
-            username: 'ogrenci1',
-            avatar: 'https://via.placeholder.com/100/ec4899/ffffff?text=S',
-            content: 'Teşekkürler hocam! Matematik denemesi çok faydalı oldu. 💯',
-            timestamp: new Date(Date.now() - 1800000),
-            type: 'text'
-        }
-    ];
-
-    messages = demoMessages;
-    messages.forEach(m => displayMessage(m));
-}
-
-// ================================
-// TEST & EXAM FUNCTIONS
-// ================================
-function openTests() {
-    closeAllPanels();
-    showToast('Testler yükleniyor...', 'info');
-    // Test listesi modalı açılacak
-    openTestModal('TYT Matematik Denemesi 1');
-}
-
-function openTestBooks() {
-    closeAllPanels();
-    showToast('Test kitapları yükleniyor...', 'info');
-}
-
-function openExams() {
-    closeAllPanels();
-    showToast('Deneme sınavları yükleniyor...', 'info');
-}
-
-function openTestModal(testTitle) {
-    document.getElementById('test-title').textContent = testTitle;
-    document.getElementById('test-modal').classList.add('active');
-    loadTestQuestions();
-}
-
-function loadTestQuestions() {
-    const container = document.getElementById('test-container');
-    container.innerHTML = '';
-
-    // Demo sorular
-    const questions = [
-        {
-            id: 1,
-            question: 'Aşağıdaki sayılardan hangisi asal sayıdır?',
-            options: ['15', '17', '21', '27'],
-            correct: 1
-        },
-        {
-            id: 2,
-            question: 'Bir üçgenin iç açıları toplamı kaç derecedir?',
-            options: ['90°', '180°', '270°', '360°'],
-            correct: 1
-        },
-        {
-            id: 3,
-            question: 'x² - 4 = 0 denkleminin çözüm kümesi nedir?',
-            options: ['{-2, 2}', '{-4, 4}', '{2}', '{-2}'],
-            correct: 0
-        }
-    ];
-
-    questions.forEach((q, index) => {
-        const qDiv = document.createElement('div');
-        qDiv.className = 'test-question';
-        qDiv.innerHTML = `
-            <h4>Soru ${index + 1}: ${escapeHtml(q.question)}</h4>
-            <div class="test-options">
-                ${q.options.map((opt, i) => `
-                    <label class="test-option">
-                        <input type="radio" name="q${q.id}" value="${i}">
-                        <span>${String.fromCharCode(65 + i)}) ${escapeHtml(opt)}</span>
-                    </label>
-                `).join('')}
-            </div>
-        `;
-        container.appendChild(qDiv);
-    });
-
-    // Add selection listeners
-    document.querySelectorAll('.test-option').forEach(opt => {
-        opt.addEventListener('click', function() {
-            this.parentElement.querySelectorAll('.test-option').forEach(o => o.classList.remove('selected'));
-            this.classList.add('selected');
-            this.querySelector('input').checked = true;
-        });
-    });
+function updateAnswerSummary(total) {
+  const wrap = document.getElementById('answer-summary');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  for (let i = 0; i < total; i++) {
+    const dot = document.createElement('div');
+    dot.className = `ans-dot${State.currentTest?.answers[i] !== undefined ? ' filled' : ''}`;
+    dot.textContent = i + 1;
+    dot.onclick = () => document.getElementById(`qcard-${i}`)?.scrollIntoView({behavior:'smooth'});
+    wrap.appendChild(dot);
+  }
 }
 
 function submitTest() {
-    let correct = 0;
-    let total = 0;
-
-    document.querySelectorAll('.test-question').forEach(q => {
-        total++;
-        const selected = q.querySelector('input:checked');
-        if (selected) {
-            // Demo scoring
-            if (Math.random() > 0.5) correct++;
-        }
-    });
-
-    const score = Math.round((correct / total) * 100);
-    currentUser.points = (currentUser.points || 0) + score;
-
-    showToast(`Test tamamlandı! Puanınız: ${score}`, score >= 50 ? 'success' : 'warning');
-    closeModal('test-modal');
-    updateUI();
-}
-
-// ================================
-// DRAWING CANVAS
-// ================================
-function initCanvas() {
-    const canvas = document.getElementById('drawing-canvas');
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-
-    // Set canvas size
-    canvas.width = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
-
-    let drawing = false;
-    let lastX = 0;
-    let lastY = 0;
-
-    canvas.addEventListener('mousedown', (e) => {
-        drawing = true;
-        [lastX, lastY] = [e.offsetX, e.offsetY];
-    });
-
-    canvas.addEventListener('mousemove', (e) => {
-        if (!drawing) return;
-
-        ctx.beginPath();
-        ctx.moveTo(lastX, lastY);
-        ctx.lineTo(e.offsetX, e.offsetY);
-        ctx.stroke();
-
-        [lastX, lastY] = [e.offsetX, e.offsetY];
-    });
-
-    canvas.addEventListener('mouseup', () => drawing = false);
-    canvas.addEventListener('mouseout', () => drawing = false);
-
-    // Touch support
-    canvas.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        const touch = e.touches[0];
-        const rect = canvas.getBoundingClientRect();
-        drawing = true;
-        [lastX, lastY] = [touch.clientX - rect.left, touch.clientY - rect.top];
-    });
-
-    canvas.addEventListener('touchmove', (e) => {
-        e.preventDefault();
-        if (!drawing) return;
-        const touch = e.touches[0];
-        const rect = canvas.getBoundingClientRect();
-
-        ctx.beginPath();
-        ctx.moveTo(lastX, lastY);
-        ctx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
-        ctx.stroke();
-
-        [lastX, lastY] = [touch.clientX - rect.left, touch.clientY - rect.top];
-    });
-
-    canvas.addEventListener('touchend', () => drawing = false);
-}
-
-function selectTool(tool) {
-    currentTool = tool;
-    document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
-    event.target.closest('.tool-btn').classList.add('active');
-
-    const canvas = document.getElementById('drawing-canvas');
-    const ctx = canvas.getContext('2d');
-
-    switch(tool) {
-        case 'pen':
-            ctx.globalCompositeOperation = 'source-over';
-            ctx.lineWidth = 2;
-            break;
-        case 'highlighter':
-            ctx.globalCompositeOperation = 'source-over';
-            ctx.lineWidth = 15;
-            ctx.globalAlpha = 0.3;
-            break;
-        case 'eraser':
-            ctx.globalCompositeOperation = 'destination-out';
-            ctx.lineWidth = 20;
-            break;
-    }
-}
-
-function changePenColor() {
-    const canvas = document.getElementById('drawing-canvas');
-    const ctx = canvas.getContext('2d');
-    ctx.strokeStyle = document.getElementById('pen-color').value;
-    ctx.globalAlpha = 1;
-}
-
-function changePenSize() {
-    const canvas = document.getElementById('drawing-canvas');
-    const ctx = canvas.getContext('2d');
-    ctx.lineWidth = document.getElementById('pen-size').value;
-}
-
-function clearCanvas() {
-    const canvas = document.getElementById('drawing-canvas');
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-}
-
-function toggleCalculator() {
-    document.getElementById('calculator-modal').classList.add('active');
-}
-
-// ================================
-// CALCULATOR
-// ================================
-let calcExpression = '';
-
-function calcAppend(value) {
-    calcExpression += value;
-    document.getElementById('calc-display').value = calcExpression;
-}
-
-function calcClear() {
-    calcExpression = '';
-    document.getElementById('calc-display').value = '';
-}
-
-function calcBackspace() {
-    calcExpression = calcExpression.slice(0, -1);
-    document.getElementById('calc-display').value = calcExpression;
-}
-
-function calcCalculate() {
-    try {
-        const result = eval(calcExpression);
-        calcExpression = result.toString();
-        document.getElementById('calc-display').value = calcExpression;
-    } catch (e) {
-        document.getElementById('calc-display').value = 'Hata';
-        calcExpression = '';
-    }
-}
-
-// ================================
-// RANKING FUNCTIONS
-// ================================
-function loadRanking() {
-    const list = document.getElementById('ranking-list');
-    list.innerHTML = '';
-
-    // Sort users by points
-    const sortedUsers = [...demoUsers].sort((a, b) => (b.points || 0) - (a.points || 0));
-
-    sortedUsers.forEach((user, index) => {
-        const rank = index + 1;
-        const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : 'rank-other';
-
-        const item = document.createElement('div');
-        item.className = 'ranking-item';
-        item.onclick = () => viewUserProfile(user);
-        item.innerHTML = `
-            <div class="rank-number ${rankClass}">${rank}</div>
-            <div class="ranking-info">
-                <img src="${user.avatar}" alt="${user.username}">
-                <div class="ranking-details">
-                    <h4>${escapeHtml(user.username)}</h4>
-                    <p>${getRoleText(user.role)}</p>
-                </div>
-            </div>
-            <div class="ranking-score">${user.points || 0} Puan</div>
-        `;
-        list.appendChild(item);
-    });
-
-    document.getElementById('total-users').textContent = sortedUsers.length;
-}
-
-function searchRanking() {
-    const search = document.getElementById('ranking-search').value.toLowerCase();
-    document.querySelectorAll('.ranking-item').forEach(item => {
-        const username = item.querySelector('h4').textContent.toLowerCase();
-        item.style.display = username.includes(search) ? 'flex' : 'none';
-    });
-}
-
-function viewUserProfile(user) {
-    const modal = document.getElementById('user-profile-modal');
-    const content = document.getElementById('view-profile-content');
-
-    content.innerHTML = `
-        <div class="profile-view-header">
-            <img src="${user.avatar}" alt="${user.username}">
-            <h3>${escapeHtml(user.username)}</h3>
-            <p>${getRoleText(user.role)}</p>
-            <p>Burç: ${user.zodiac || calculateZodiac(user.birthdate)}</p>
-        </div>
-        <div class="profile-view-body">
-            <h4>Hakkında</h4>
-            <p>${escapeHtml(user.bio || 'Henüz açıklama eklenmemiş.')}</p>
-            <h4>Puanlar</h4>
-            <p>Toplam: ${user.points || 0} puan</p>
-        </div>
-    `;
-
-    modal.classList.add('active');
-}
-
-// ================================
-// ADMIN PANEL
-// ================================
-function openAdminPanel() {
-    if (!isAdmin) {
-        showToast('Bu işlem için yönetici yetkisi gerekiyor!', 'error');
-        return;
-    }
-    document.getElementById('admin-modal').classList.add('active');
-}
-
-function showAdminTab(tab) {
-    document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
-    event.target.closest('.admin-tab').classList.add('active');
-
-    document.querySelectorAll('.admin-section').forEach(s => s.classList.add('hidden'));
-    document.getElementById(`admin-${tab}`).classList.remove('hidden');
-
-    if (tab === 'users') loadUserManagement();
-}
-
-function setUploadType(type) {
-    document.querySelectorAll('.upload-type-btn').forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
-}
-
-function addQuestion() {
-    const container = document.getElementById('questions-list');
-    const qNum = container.children.length + 1;
-
-    const qDiv = document.createElement('div');
-    qDiv.className = 'question-box';
-    qDiv.innerHTML = `
-        <h5>Soru ${qNum}</h5>
-        <input type="text" placeholder="Soru metni" class="question-text">
-        <div class="question-options">
-            <input type="text" placeholder="A seçeneği">
-            <input type="text" placeholder="B seçeneği">
-            <input type="text" placeholder="C seçeneği">
-            <input type="text" placeholder="D seçeneği">
-            <input type="text" placeholder="E seçeneği">
-        </div>
-        <select class="correct-answer">
-            <option value="0">A</option>
-            <option value="1">B</option>
-            <option value="2">C</option>
-            <option value="3">D</option>
-            <option value="4">E</option>
-        </select>
-    `;
-    container.appendChild(qDiv);
-}
-
-function loadUserManagement() {
-    const list = document.getElementById('users-list');
-    list.innerHTML = '';
-
-    demoUsers.forEach(user => {
-        if (user.id === currentUser.id) return;
-
-        const item = document.createElement('div');
-        item.className = 'user-item';
-        item.innerHTML = `
-            <div class="user-info">
-                <img src="${user.avatar}" alt="${user.username}">
-                <div>
-                    <h4>${escapeHtml(user.username)}</h4>
-                    <p>${getRoleText(user.role)}</p>
-                </div>
-            </div>
-            <div class="user-actions">
-                ${user.role !== 'teacher' ? `<button class="role-btn teacher" onclick="makeTeacher('${user.id}')">Öğretmen Yap</button>` : ''}
-                ${user.role !== 'admin' ? `<button class="role-btn admin" onclick="makeAdmin('${user.id}')">Admin Yap</button>` : ''}
-                <button class="role-btn remove" onclick="removeUser('${user.id}')">Kaldır</button>
-            </div>
-        `;
-        list.appendChild(item);
-    });
-}
-
-function searchUsers() {
-    const search = document.getElementById('user-search').value.toLowerCase();
-    document.querySelectorAll('.user-item').forEach(item => {
-        const username = item.querySelector('h4').textContent.toLowerCase();
-        item.style.display = username.includes(search) ? 'flex' : 'none';
-    });
-}
-
-function makeTeacher(userId) {
-    const user = demoUsers.find(u => u.id === userId);
-    if (user) {
-        user.role = 'teacher';
-        showToast(`${user.username} artık öğretmen!`, 'success');
-        loadUserManagement();
-    }
-}
-
-function makeAdmin(userId) {
-    const user = demoUsers.find(u => u.id === userId);
-    if (user) {
-        user.role = 'admin';
-        showToast(`${user.username} artık yönetici!`, 'success');
-        loadUserManagement();
-    }
-}
-
-function removeUser(userId) {
-    if (!confirm('Bu kullanıcıyı silmek istediğinize emin misiniz?')) return;
-
-    const index = demoUsers.findIndex(u => u.id === userId);
-    if (index > -1) {
-        demoUsers.splice(index, 1);
-        showToast('Kullanıcı kaldırıldı', 'success');
-        loadUserManagement();
-    }
-}
-
-// ================================
-// SETTINGS
-// ================================
-function loadSettings() {
-    const savedDarkMode = localStorage.getItem('darkMode') === 'true';
-    const savedSound = localStorage.getItem('soundEnabled') !== 'false';
-
-    if (savedDarkMode) toggleDarkMode(true);
-    document.getElementById('sound-toggle').checked = savedSound;
-}
-
-function toggleDarkMode(force = null) {
-    darkMode = force !== null ? force : !darkMode;
-    document.body.classList.toggle('dark-mode', darkMode);
-    document.body.classList.toggle('light-mode', !darkMode);
-    localStorage.setItem('darkMode', darkMode);
-
-    if (!force) showToast(darkMode ? 'Karanlık mod aktif' : 'Aydınlık mod aktif', 'info');
-}
-
-function toggleSound() {
-    soundEnabled = document.getElementById('sound-toggle').checked;
-    localStorage.setItem('soundEnabled', soundEnabled);
-    showToast(soundEnabled ? 'Ses efektleri açık' : 'Ses efektleri kapalı', 'info');
-}
-
-function toggleMusic() {
-    musicEnabled = document.getElementById('music-toggle').checked;
-    showToast(musicEnabled ? 'Müzik açık (demo)' : 'Müzik kapalı', 'info');
-}
-
-function showBlockedUsers() {
-    if (blockedUsers.length === 0) {
-        showToast('Henüz engellenen kullanıcı yok', 'info');
-        return;
-    }
-    // Blocked users list modal
-}
-
-// ================================
-// MENU FUNCTIONS
-// ================================
-function openBestScores() {
-    closeAllPanels();
-    showToast('En iyi dereceler yükleniyor...', 'info');
-    showRanking();
-}
-
-function openTeachers() {
-    closeAllPanels();
-    showToast('Öğretmenler listesi yükleniyor...', 'info');
-}
-
-function openAdminDM() {
-    closeAllPanels();
-    showToast('Yönetici DM açılıyor...', 'info');
-}
-
-function openWritings() {
-    closeAllPanels();
-    showToast('Yazılılar yükleniyor...', 'info');
-}
-
-function openScenarios() {
-    closeAllPanels();
-    showToast('Senaryolar yükleniyor...', 'info');
-}
-
-function openSchedule() {
-    closeAllPanels();
-    showToast('Ders programı yükleniyor...', 'info');
-}
-
-function openSchoolPhotos() {
-    closeAllPanels();
-    showToast('Okul fotoğrafları yükleniyor...', 'info');
-}
-
-function openSchoolTeachers() {
-    closeAllPanels();
-    showToast('Okul öğretmenleri yükleniyor...', 'info');
-}
-
-function manageData(type) {
-    const area = document.getElementById('data-management-area');
-    area.innerHTML = `
-        <h4>${type.toUpperCase()} Yönetimi</h4>
-        <p>Bu bölümde ${type} verilerini ekleyebilir, düzenleyebilir ve silebilirsiniz.</p>
-        <button class="btn primary" onclick="addDataEntry('${type}')">
-            <i class="fas fa-plus"></i> Yeni Ekle
-        </button>
-    `;
-}
-
-function addDataEntry(type) {
-    showToast(`${type} için yeni kayıt ekleme modalı açılacak`, 'info');
-}
-
-// ================================
-// UTILITY FUNCTIONS
-// ================================
-function closeModal(modalId) {
-    document.getElementById(modalId).classList.remove('active');
-}
-
-function closeAllPanels() {
-    document.querySelectorAll('.side-panel').forEach(panel => {
-        panel.classList.remove('active');
-    });
-}
-
-function showToast(message, type = 'info') {
-    const container = document.getElementById('toast-container');
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-
-    const icons = {
-        success: 'check-circle',
-        error: 'exclamation-circle',
-        warning: 'exclamation-triangle',
-        info: 'info-circle'
-    };
-
-    toast.innerHTML = `
-        <i class="fas fa-${icons[type]}"></i>
-        <span>${message}</span>
-    `;
-
-    container.appendChild(toast);
-
-    setTimeout(() => {
-        toast.style.animation = 'slideInRight 0.3s ease reverse';
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
-}
-
-function shakeElement(element) {
-    element.classList.add('shake');
-    setTimeout(() => element.classList.remove('shake'), 500);
-}
-
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-function formatTime(date) {
-    const d = new Date(date);
-    return d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-}
-
-function calculateZodiac(birthdate) {
-    if (!birthdate) return 'Belirsiz';
-
-    const date = new Date(birthdate);
-    const day = date.getDate();
-    const month = date.getMonth() + 1;
-
-    const zodiacSigns = [
-        { sign: 'Oğlak', start: [1, 1], end: [1, 19] },
-        { sign: 'Kova', start: [1, 20], end: [2, 18] },
-        { sign: 'Balık', start: [2, 19], end: [3, 20] },
-        { sign: 'Koç', start: [3, 21], end: [4, 19] },
-        { sign: 'Boğa', start: [4, 20], end: [5, 20] },
-        { sign: 'İkizler', start: [5, 21], end: [6, 20] },
-        { sign: 'Yengeç', start: [6, 21], end: [7, 22] },
-        { sign: 'Aslan', start: [7, 23], end: [8, 22] },
-        { sign: 'Başak', start: [8, 23], end: [9, 22] },
-        { sign: 'Terazi', start: [9, 23], end: [10, 22] },
-        { sign: 'Akrep', start: [10, 23], end: [11, 21] },
-        { sign: 'Yay', start: [11, 22], end: [12, 21] },
-        { sign: 'Oğlak', start: [12, 22], end: [12, 31] }
-    ];
-
-    for (let z of zodiacSigns) {
-        if ((month === z.start[0] && day >= z.start[1]) || 
-            (month === z.end[0] && day <= z.end[1])) {
-            return z.sign;
-        }
-    }
-    return 'Belirsiz';
-}
-
-// ================================
-// NOTIFICATIONS (ADMIN)
-// ================================
-document.getElementById('notif-type')?.addEventListener('change', function() {
-    const specificGroup = document.getElementById('specific-user-group');
-    specificGroup.classList.toggle('hidden', this.value !== 'specific');
-});
-
-document.getElementById('notif-form')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const type = document.getElementById('notif-type').value;
-    const title = document.getElementById('notif-title').value;
-    const message = document.getElementById('notif-message').value;
-
-    if (type === 'all') {
-        showToast(`Tüm kullanıcılara bildirim gönderildi: ${title}`, 'success');
+  if (!State.currentTest) return;
+  const { questions, answers } = State.currentTest;
+  let correct = 0, wrong = 0, empty = 0;
+
+  questions.forEach((q, i) => {
+    const ans = answers[i];
+    const optBtns = q.options.map((_, j) => document.getElementById(`opt-${i}-${j}`));
+    if (ans === undefined) {
+      empty++;
+    } else if (ans === q.answer) {
+      correct++;
+      optBtns[ans]?.classList.add('correct');
     } else {
-        const username = document.getElementById('notif-username').value;
-        showToast(`${username} kullanıcısına bildirim gönderildi: ${title}`, 'success');
+      wrong++;
+      optBtns[ans]?.classList.add('wrong');
+      optBtns[q.answer]?.classList.add('correct');
     }
+  });
 
-    document.getElementById('notif-form').reset();
-});
+  const puan = correct * 4 - wrong;
+  const net = Math.max(0, puan);
 
-// ================================
-// KEYBOARD SHORTCUTS
-// ================================
+  // Update user score
+  State.user.score = (State.user.score || 0) + net;
+  State.user.solved = (State.user.solved || 0) + 1;
+  LS.set('sh_user', State.user);
+  persistUser();
+
+  // Show result
+  document.getElementById('result-content').innerHTML = `
+    <div class="result-score">${net.toFixed(1)}</div>
+    <p style="color:var(--text-muted);margin:.5rem 0">Net Puan</p>
+    <div class="result-details">
+      <div class="result-stat"><span class="result-correct">${correct}</span><small>Doğru</small></div>
+      <div class="result-stat"><span class="result-wrong">${wrong}</span><small>Yanlış</small></div>
+      <div class="result-stat"><span class="result-empty">${empty}</span><small>Boş</small></div>
+    </div>
+    <p style="margin-top:1.5rem;color:var(--text-secondary);font-size:.88rem">
+      Süre: ${formatSeconds(Math.floor((Date.now() - State.currentTest.startTime) / 1000))}
+    </p>
+  `;
+  openModal('result-modal');
+  if (State.settings.notifSound) playSound('success');
+  // ── FIREBASE: save result ──
+}
+
+// ─── Solver Tools ────────────────────────────────────────────────
+function toggleDrawingMode() {
+  const panel = document.getElementById('drawing-panel');
+  panel.classList.toggle('hidden');
+  if (!panel.classList.contains('hidden')) initCanvas();
+  toggleToolBtn(0);
+}
+function toggleCalculator() {
+  document.getElementById('calc-panel').classList.toggle('hidden'); toggleToolBtn(1);
+}
+function toggleFormulas() {
+  document.getElementById('formula-panel').classList.toggle('hidden'); toggleToolBtn(2);
+}
+function toggleTimer() {
+  document.getElementById('timer-panel').classList.toggle('hidden'); toggleToolBtn(3);
+}
+function toggleToolBtn(idx) {
+  const btns = document.querySelectorAll('.solver-tools .tool-btn');
+  if (btns[idx]) btns[idx].classList.toggle('active');
+}
+
+// ─── Canvas Drawing ──────────────────────────────────────────────
+function initCanvas() {
+  const canvas = document.getElementById('drawing-canvas');
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width - 2;
+  canvas.height = 260;
+  State.drawing.canvas = canvas;
+  State.drawing.ctx = canvas.getContext('2d');
+
+  canvas.addEventListener('mousedown', startDraw);
+  canvas.addEventListener('mousemove', draw);
+  canvas.addEventListener('mouseup', stopDraw);
+  canvas.addEventListener('mouseleave', stopDraw);
+  canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startDraw(e.touches[0]); });
+  canvas.addEventListener('touchmove', (e) => { e.preventDefault(); draw(e.touches[0]); });
+  canvas.addEventListener('touchend', stopDraw);
+}
+function getPos(e, canvas) {
+  const r = canvas.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+function startDraw(e) {
+  State.drawing.painting = true;
+  const { x, y } = getPos(e, State.drawing.canvas);
+  State.drawing.ctx.beginPath();
+  State.drawing.ctx.moveTo(x, y);
+}
+function draw(e) {
+  if (!State.drawing.painting) return;
+  const ctx = State.drawing.ctx;
+  const { x, y } = getPos(e, State.drawing.canvas);
+  const color = document.getElementById('pen-color').value;
+  const size = document.getElementById('pen-size').value;
+  if (State.drawing.tool === 'eraser') {
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.strokeStyle = 'rgba(0,0,0,1)';
+    ctx.lineWidth = size * 3;
+  } else {
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.strokeStyle = color;
+    ctx.lineWidth = size;
+  }
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.lineTo(x, y);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+}
+function stopDraw() { State.drawing.painting = false; }
+function setDrawTool(t) { State.drawing.tool = t; }
+function clearCanvas() {
+  if (State.drawing.ctx) State.drawing.ctx.clearRect(0, 0, State.drawing.canvas.width, State.drawing.canvas.height);
+}
+
+// ─── Calculator ──────────────────────────────────────────────────
+function buildCalculator() {
+  const btns = [
+    'C','±','%','÷',
+    '7','8','9','×',
+    '4','5','6','-',
+    '1','2','3','+',
+    '0','.','⌫','=',
+  ];
+  const wrap = document.getElementById('calc-buttons'); if (!wrap) return;
+  btns.forEach(b => {
+    const btn = document.createElement('button');
+    btn.className = `calc-btn${['÷','×','-','+'].includes(b) ? ' op' : b === '=' ? ' eq' : ''}`;
+    btn.textContent = b;
+    btn.addEventListener('click', () => calcPress(b));
+    wrap.appendChild(btn);
+  });
+}
+let calcExpr = '';
+function calcPress(b) {
+  const display = document.getElementById('calc-display');
+  if (b === 'C') { calcExpr = ''; display.value = ''; return; }
+  if (b === '⌫') { calcExpr = calcExpr.slice(0,-1); display.value = calcExpr; return; }
+  if (b === '=') {
+    try {
+      const expr = calcExpr.replace(/×/g,'*').replace(/÷/g,'/');
+      const result = Function('"use strict"; return (' + expr + ')')();
+      display.value = result;
+      calcExpr = String(result);
+    } catch { display.value = 'Hata'; calcExpr = ''; }
+    return;
+  }
+  if (b === '±') { calcExpr = calcExpr.startsWith('-') ? calcExpr.slice(1) : '-' + calcExpr; display.value = calcExpr; return; }
+  if (b === '%') { try { calcExpr = String(parseFloat(calcExpr) / 100); display.value = calcExpr; } catch {} return; }
+  calcExpr += b;
+  display.value = calcExpr;
+}
+
+// ─── Formulas ────────────────────────────────────────────────────
+const FORMULAS = {
+  math: `
+    <strong>Alan:</strong><br>
+    Kare: A = a²<br>
+    Dikdörtgen: A = a×b<br>
+    Üçgen: A = (a×h)/2<br>
+    Daire: A = π×r²<br>
+    <br><strong>Çevre:</strong><br>
+    Kare: Ç = 4a<br>
+    Dikdörtgen: Ç = 2(a+b)<br>
+    Daire: Ç = 2πr<br>
+    <br><strong>Köklü İfadeler:</strong><br>
+    √(a×b) = √a × √b<br>
+    √(a/b) = √a / √b<br>
+    <br><strong>Üslü İfadeler:</strong><br>
+    aⁿ × aᵐ = aⁿ⁺ᵐ<br>
+    aⁿ / aᵐ = aⁿ⁻ᵐ<br>
+    (aⁿ)ᵐ = aⁿˣᵐ
+  `,
+  physics: `
+    <strong>Mekanik:</strong><br>
+    F = m × a (Newton 2. Kanun)<br>
+    W = m × g (Ağırlık)<br>
+    v = v₀ + a×t<br>
+    x = v₀t + ½at²<br>
+    v² = v₀² + 2ax<br>
+    <br><strong>Enerji:</strong><br>
+    Ek = ½mv²<br>
+    Ep = mgh<br>
+    P = W/t (Güç)<br>
+    <br><strong>Elektrik:</strong><br>
+    V = I × R (Ohm Kanunu)<br>
+    P = V × I<br>
+    Q = I × t
+  `,
+  chemistry: `
+    <strong>Mol Hesaplamaları:</strong><br>
+    n = m / M (mol = kütle/mol kütlesi)<br>
+    n = N / Nₐ (Avogadro)<br>
+    Nₐ = 6.02 × 10²³<br>
+    <br><strong>Gaz Kanunları:</strong><br>
+    PV = nRT (İdeal Gaz)<br>
+    R = 0.082 L·atm/mol·K<br>
+    <br><strong>Asit-Baz:</strong><br>
+    pH = -log[H⁺]<br>
+    pH + pOH = 14<br>
+    Kw = 1×10⁻¹⁴
+  `,
+};
+function buildFormulas(subject) { showFormulas(subject); }
+function showFormulas(subject) {
+  const wrap = document.getElementById('formula-content'); if (!wrap) return;
+  wrap.innerHTML = FORMULAS[subject] || '';
+  document.querySelectorAll('.ftab').forEach((t,i) => {
+    t.classList.toggle('active', ['math','physics','chemistry'][i] === subject);
+  });
+}
+
+// ─── Timer ───────────────────────────────────────────────────────
+function startTimer() {
+  if (State.timer.running) return;
+  State.timer.running = true;
+  State.timer.interval = setInterval(() => {
+    State.timer.seconds++;
+    document.getElementById('timer-display').textContent = formatSeconds(State.timer.seconds);
+  }, 1000);
+}
+function pauseTimer() {
+  clearInterval(State.timer.interval); State.timer.running = false;
+}
+function resetTimer() {
+  pauseTimer(); State.timer.seconds = 0;
+  const el = document.getElementById('timer-display');
+  if (el) el.textContent = '00:00';
+}
+function formatSeconds(s) {
+  const m = Math.floor(s / 60), sec = s % 60;
+  return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  RANKINGS
+// ═══════════════════════════════════════════════════════════════════
+function loadRankings() {
+  const users = Object.values(LS.get('sh_users') || {});
+  const sorted = users.filter(u => u.role !== 'banned').sort((a,b) => (b.score||0) - (a.score||0));
+  document.getElementById('total-users-count').textContent = `Toplam: ${users.length} kullanıcı`;
+  renderRankingsTable(sorted);
+  // ── FIREBASE: query users by score ──
+}
+function renderRankingsTable(users) {
+  const tbody = document.getElementById('rankings-body'); if (!tbody) return;
+  tbody.innerHTML = users.map((u,i) => `
+    <tr class="rank-${i+1}">
+      <td>${i+1}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="avatar" style="width:28px;height:28px;font-size:.7rem">${(u.username||'?')[0].toUpperCase()}</div>
+          ${sanitize(u.username)}
+          <span style="font-size:.7rem;color:var(--text-muted)">${u.role === 'admin' ? '👑' : u.role === 'teacher' ? '🎓' : ''}</span>
+        </div>
+      </td>
+      <td style="color:var(--accent);font-weight:700">${u.score || 0}</td>
+      <td>${u.score ? Math.round((u.score / ((u.solved||1)*4))*100) + '%' : '—'}</td>
+      <td>${u.solved || 0}</td>
+      <td><span class="rank-link" onclick="openUserProfile('${u.uid}')">Profil</span></td>
+    </tr>
+  `).join('') || '<tr><td colspan="6" class="empty-state">Henüz kullanıcı yok.</td></tr>';
+}
+function filterRankings(q) {
+  const users = Object.values(LS.get('sh_users') || {});
+  const filtered = users.filter(u => u.username.toLowerCase().includes(q.toLowerCase())).sort((a,b) => (b.score||0) - (a.score||0));
+  renderRankingsTable(filtered);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  TEACHERS
+// ═══════════════════════════════════════════════════════════════════
+function loadTeachers() {
+  const users = Object.values(LS.get('sh_users') || {}).filter(u => u.role === 'teacher' || u.role === 'admin');
+  const grid = document.getElementById('teachers-grid'); if (!grid) return;
+  if (!users.length) { grid.innerHTML = '<div class="empty-state">Henüz öğretmen yok.</div>'; return; }
+  grid.innerHTML = users.map(u => `
+    <div class="teacher-card" onclick="openUserProfile('${u.uid}')">
+      <div class="teacher-avatar">${u.avatar ? `<img src="${u.avatar}" />` : (u.username||'?')[0].toUpperCase()}</div>
+      <div class="teacher-name">${sanitize(u.username)}</div>
+      <div class="teacher-subject">${u.role === 'admin' ? '👑 Yönetici' : '🎓 Öğretmen'}</div>
+      <button class="teacher-dm-btn" onclick="event.stopPropagation();openDMModal('${u.uid}','${sanitize(u.username)}')">💬 Mesaj Gönder</button>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  PHOTOS
+// ═══════════════════════════════════════════════════════════════════
+function loadPhotos() {
+  const photos = LS.get('sh_photos') || [];
+  const grid = document.getElementById('photos-grid'); if (!grid) return;
+  if (!photos.length) { grid.innerHTML = '<div class="empty-state">Henüz fotoğraf yok.</div>'; return; }
+  grid.innerHTML = photos.map(p => `
+    <div class="photo-item" onclick="window.open('${p.url}','_blank')">
+      <img src="${p.url}" alt="${sanitize(p.title)}" />
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  SCHOOL TEACHERS
+// ═══════════════════════════════════════════════════════════════════
+function loadSchoolTeachers() {
+  const data = LS.get('sh_schoolteachers') || [];
+  const grid = document.getElementById('schoolteachers-grid'); if (!grid) return;
+  if (!data.length) { grid.innerHTML = '<div class="empty-state">Henüz okul öğretmeni eklenmemiş.</div>'; return; }
+  grid.innerHTML = data.map(t => `
+    <div class="teacher-card">
+      <div class="teacher-avatar">${t.avatar ? `<img src="${t.avatar}" />` : '👨‍🏫'}</div>
+      <div class="teacher-name">${sanitize(t.name)}</div>
+      <div class="teacher-subject">${sanitize(t.subject)}</div>
+      ${t.bio ? `<p style="font-size:.8rem;color:var(--text-secondary);margin-top:.5rem">${sanitize(t.bio)}</p>` : ''}
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  DM (Direct Message)
+// ═══════════════════════════════════════════════════════════════════
+function openDMModal(uid, username) {
+  State.dmTarget = { uid, username };
+  document.getElementById('dm-modal-title').textContent = `💬 ${username}`;
+  loadDMHistory(uid);
+  openModal('dm-modal');
+  // ── FIREBASE: onSnapshot(dmRef) ──
+}
+function loadDMHistory(uid) {
+  const key = getDMKey(State.user?.uid, uid);
+  const msgs = LS.get(`sh_dm_${key}`) || [];
+  const container = document.getElementById('dm-messages');
+  container.innerHTML = msgs.map(m => `
+    <div class="dm-msg${m.senderUid === State.user?.uid ? ' own' : ''}">
+      <div class="dm-bubble">${sanitize(m.text)}</div>
+      <small>${formatTime(m.timestamp)}</small>
+    </div>
+  `).join('') || '<div style="text-align:center;color:var(--text-muted);font-size:.85rem">Henüz mesaj yok.</div>';
+  container.scrollTop = container.scrollHeight;
+}
+function getDMKey(a, b) {
+  if (!a || !b) return 'admin';
+  return [a, b].sort().join('_');
+}
+function handleDMKey(e) {
+  if (e.key === 'Enter') { e.preventDefault(); sendDM(); }
+}
+function sendDM() {
+  const input = document.getElementById('dm-input');
+  const text = input.value.trim(); if (!text) return;
+  const { uid } = State.dmTarget;
+  const msg = { senderUid: State.user.uid, receiverUid: uid, text, timestamp: new Date().toISOString() };
+
+  const key = getDMKey(State.user.uid, uid);
+  const msgs = LS.get(`sh_dm_${key}`) || [];
+  msgs.push(msg);
+  LS.set(`sh_dm_${key}`, msgs);
+
+  const container = document.getElementById('dm-messages');
+  const div = document.createElement('div');
+  div.className = 'dm-msg own';
+  div.innerHTML = `<div class="dm-bubble">${sanitize(text)}</div><small>Şimdi</small>`;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+  input.value = '';
+  // ── FIREBASE: addDoc(dmRef, msg) ──
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  NOTIFICATIONS
+// ═══════════════════════════════════════════════════════════════════
+function loadNotifications() {
+  const notifs = LS.get(`sh_notifs_${State.user?.uid}`) || [];
+  const global = LS.get('sh_notifs_all') || [];
+  State.notifications = [...global, ...notifs].sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+  renderNotifications();
+  // ── FIREBASE: onSnapshot(notifRef) ──
+}
+function renderNotifications() {
+  const list = document.getElementById('notif-list'); if (!list) return;
+  const badge = document.getElementById('notif-badge');
+  const unread = State.notifications.filter(n => !n.read).length;
+
+  if (unread > 0) {
+    badge.textContent = unread > 9 ? '9+' : unread;
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
+  }
+
+  if (!State.notifications.length) {
+    list.innerHTML = '<p class="empty-state">Henüz bildirim yok.</p>';
+    return;
+  }
+  list.innerHTML = State.notifications.map(n => `
+    <div class="notif-item${n.isAdmin ? ' admin' : ''}">
+      <strong>${sanitize(n.title || 'Duyuru')}</strong>
+      <p>${sanitize(n.message)}</p>
+      <small>${formatTime(n.timestamp)}</small>
+    </div>
+  `).join('');
+}
+function toggleNotifPanel() {
+  const panel = document.getElementById('notif-panel');
+  panel.classList.toggle('hidden');
+  // Mark all read
+  State.notifications.forEach(n => n.read = true);
+  LS.set(`sh_notifs_${State.user?.uid}`, State.notifications.filter(n => !n.isGlobal));
+  document.getElementById('notif-badge').classList.add('hidden');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  BROADCAST (Admin)
+// ═══════════════════════════════════════════════════════════════════
+function openBroadcastModal() {
+  openModal('broadcast-modal');
+  document.getElementById('broadcast-target').onchange = function() {
+    document.getElementById('broadcast-user-select').classList.toggle('hidden', this.value !== 'dm');
+  };
+}
+function sendBroadcast() {
+  const target = val('broadcast-target');
+  const message = val('broadcast-message');
+  if (!message) return toast('Mesaj yaz.', 'error');
+
+  const notif = {
+    id: Date.now().toString(),
+    title: '📢 Yönetici Duyurusu',
+    message, isAdmin: true,
+    timestamp: new Date().toISOString(), read: false,
+  };
+
+  if (target === 'all') {
+    notif.isGlobal = true;
+    const global = LS.get('sh_notifs_all') || [];
+    global.unshift(notif);
+    LS.set('sh_notifs_all', global);
+    // Reload local notifs
+    loadNotifications();
+    toast('Duyuru tüm kullanıcılara gönderildi.', 'success');
+  } else {
+    const username = val('broadcast-username');
+    const users = LS.get('sh_users') || {};
+    const target = Object.values(users).find(u => u.username === username);
+    if (!target) return toast('Kullanıcı bulunamadı.', 'error');
+    const key = `sh_notifs_${target.uid}`;
+    const existing = LS.get(key) || [];
+    existing.unshift(notif);
+    LS.set(key, existing);
+    toast(`Mesaj ${username} kullanıcısına gönderildi.`, 'success');
+  }
+  closeModal('broadcast-modal');
+  document.getElementById('broadcast-message').value = '';
+  // ── FIREBASE: addDoc(notifRef, notif) ──
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  ADMIN — USER MANAGEMENT
+// ═══════════════════════════════════════════════════════════════════
+function loadAdminUsers() {
+  if (!['admin'].includes(State.user?.role)) return;
+  const users = Object.values(LS.get('sh_users') || {});
+  renderAdminUsers(users);
+}
+function filterAdminUsers(q) {
+  const users = Object.values(LS.get('sh_users') || {}).filter(u => u.username.toLowerCase().includes(q.toLowerCase()));
+  renderAdminUsers(users);
+}
+function renderAdminUsers(users) {
+  const tbody = document.getElementById('admin-users-body'); if (!tbody) return;
+  tbody.innerHTML = users.map(u => `
+    <tr>
+      <td>${sanitize(u.username)}</td>
+      <td>${sanitize(u.email)}</td>
+      <td>
+        <select class="role-select" onchange="changeUserRole('${u.uid}', this.value)" ${u.uid === State.user.uid ? 'disabled' : ''}>
+          <option value="student" ${u.role==='student'?'selected':''}>Öğrenci</option>
+          <option value="teacher" ${u.role==='teacher'?'selected':''}>Öğretmen</option>
+          <option value="admin" ${u.role==='admin'?'selected':''}>Yönetici</option>
+          <option value="banned" ${u.role==='banned'?'selected':''}>Banlı</option>
+        </select>
+      </td>
+      <td>${formatDate(u.joinDate)}</td>
+      <td>
+        <button class="btn-sm" onclick="openDMModal('${u.uid}','${sanitize(u.username)}')">💬 DM</button>
+      </td>
+    </tr>
+  `).join('') || '<tr><td colspan="5" class="empty-state">Kullanıcı yok.</td></tr>';
+}
+function changeUserRole(uid, role) {
+  const users = LS.get('sh_users') || {};
+  if (users[uid]) {
+    users[uid].role = role;
+    LS.set('sh_users', users);
+    toast('Rol güncellendi.', 'success');
+    // ── FIREBASE: updateDoc(userRef, { role }) ──
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  ADMIN / TEACHER — UPLOAD
+// ═══════════════════════════════════════════════════════════════════
+function openUploadModal(type) {
+  if (!['admin','teacher'].includes(State.user?.role)) return toast('Bu işlem için yetkiniz yok.', 'error');
+  State.uploadType = type;
+
+  const titles = {
+    test: '📝 Test Ekle', testbook: '📖 Test Kitabı Ekle', exam: '🎯 Deneme Ekle',
+    writing: '✍️ Yazılı/Senaryo Ekle', schedule: '📅 Ders Programı Ekle',
+    photo: '🖼️ Fotoğraf Ekle', schoolteacher: '🏫 Okul Öğretmeni Ekle',
+  };
+  document.getElementById('upload-modal-title').textContent = titles[type] || 'İçerik Ekle';
+
+  // Show/hide question input
+  const showQ = ['test','exam'].includes(type);
+  document.getElementById('upload-questions-section').classList.toggle('hidden', !showQ);
+
+  // Clear form
+  ['upload-title','upload-desc','upload-questions'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('upload-file').value = '';
+
+  openModal('upload-modal');
+}
+function submitUpload() {
+  const type = State.uploadType;
+  const title = val('upload-title');
+  const subject = val('upload-subject');
+  const desc = val('upload-desc');
+  if (!title) return toast('Başlık gir.', 'error');
+
+  const item = { id: Date.now().toString(), title, subject, desc, createdBy: State.user.uid, createdAt: new Date().toISOString() };
+
+  if (['test','exam'].includes(type)) {
+    const qText = val('upload-questions');
+    if (qText) {
+      try {
+        item.questions = JSON.parse(qText);
+        item.questionCount = item.questions.length;
+      } catch { return toast('Sorular geçerli JSON formatında değil.', 'error'); }
+    }
+  }
+
+  if (type === 'schoolteacher') {
+    const file = document.getElementById('upload-file').files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const data = LS.get('sh_schoolteachers') || [];
+        data.push({ id: item.id, name: title, subject, bio: desc, avatar: e.target.result });
+        LS.set('sh_schoolteachers', data);
+        toast('Okul öğretmeni eklendi.', 'success');
+        closeModal('upload-modal');
+      };
+      reader.readAsDataURL(file);
+      return;
+    }
+    const data = LS.get('sh_schoolteachers') || [];
+    data.push({ id: item.id, name: title, subject, bio: desc });
+    LS.set('sh_schoolteachers', data);
+    toast('Okul öğretmeni eklendi.', 'success');
+    closeModal('upload-modal');
+    return;
+  }
+
+  if (type === 'photo') {
+    const file = document.getElementById('upload-file').files[0];
+    if (!file) return toast('Fotoğraf seç.', 'error');
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const photos = LS.get('sh_photos') || [];
+      photos.push({ id: item.id, title, url: e.target.result });
+      LS.set('sh_photos', photos);
+      toast('Fotoğraf eklendi.', 'success');
+      closeModal('upload-modal');
+    };
+    reader.readAsDataURL(file);
+    return;
+  }
+
+  // File handling
+  const file = document.getElementById('upload-file').files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      item.fileUrl = e.target.result;
+      saveContent(type, item);
+    };
+    reader.readAsDataURL(file);
+    // ── FIREBASE: Storage upload ──
+  } else {
+    saveContent(type, item);
+  }
+}
+function saveContent(type, item) {
+  const key = `sh_${type}s`;
+  const data = LS.get(key) || [];
+  data.unshift(item);
+  LS.set(key, data);
+  toast('İçerik eklendi! ✅', 'success');
+  closeModal('upload-modal');
+  if (State.currentPage === type + 's') loadContent(type + 's');
+  // ── FIREBASE: addDoc ──
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  AVATAR
+// ═══════════════════════════════════════════════════════════════════
+function renderAvatar(el, u, large = false) {
+  if (!el) return;
+  if (u?.avatar) {
+    el.innerHTML = `<img src="${u.avatar}" alt="avatar" />`;
+  } else {
+    el.innerHTML = (u?.username || '?')[0].toUpperCase();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════════════════════════
+function val(id) {
+  const el = document.getElementById(id);
+  if (!el) return '';
+  return el.value || '';
+}
+function sanitize(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function formatTime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+}
+function formatDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleDateString('tr-TR', { day:'2-digit', month:'short', year:'2-digit' });
+}
+function toast(msg, type = 'default') {
+  const container = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = `toast${type !== 'default' ? ' '+type : ''}`;
+  t.textContent = msg;
+  container.appendChild(t);
+  setTimeout(() => t.remove(), 3200);
+}
+function playSound(type) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    if (type === 'msg') { osc.frequency.value = 880; gain.gain.value = 0.1; }
+    if (type === 'success') { osc.frequency.value = 1047; gain.gain.value = 0.15; }
+    osc.start(); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+    osc.stop(ctx.currentTime + 0.3);
+  } catch(e) {}
+}
+function persistUser() {
+  const users = LS.get('sh_users') || {};
+  if (State.user?.uid && users[State.user.uid]) {
+    const pw = users[State.user.uid].password;
+    users[State.user.uid] = { ...State.user, password: pw };
+    LS.set('sh_users', users);
+  }
+  // ── FIREBASE: updateDoc(userRef, {...userData}) ──
+}
+
+// ─── Close panels on backdrop ────────────────────────────────────
 document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-        document.querySelectorAll('.modal.active').forEach(modal => {
-            modal.classList.remove('active');
-        });
-        closeAllPanels();
-    }
+  if (e.key === 'Escape') {
+    closeAllPanels();
+    ['user-profile-modal','dm-modal','broadcast-modal','upload-modal','result-modal'].forEach(closeModal);
+    document.getElementById('emoji-picker').classList.add('hidden');
+  }
 });
-
-// ================================
-// WINDOW RESIZE
-// ================================
-window.addEventListener('resize', () => {
-    const canvas = document.getElementById('drawing-canvas');
-    if (canvas) {
-        canvas.width = canvas.offsetWidth;
-        canvas.height = canvas.offsetHeight;
-    }
+document.addEventListener('click', (e) => {
+  const picker = document.getElementById('emoji-picker');
+  if (picker && !picker.contains(e.target) && !e.target.closest('.tool-btn')) {
+    picker.classList.add('hidden');
+  }
+  const notifPanel = document.getElementById('notif-panel');
+  if (notifPanel && !notifPanel.contains(e.target) && !e.target.closest('.notif-btn')) {
+    notifPanel.classList.add('hidden');
+  }
 });
-
-// Demo notifications
-setTimeout(() => {
-    if (currentUser) {
-        showToast('Yeni bir deneme sınavı eklendi: TYT Matematik Denemesi 2', 'info');
-    }
-}, 10000);
-
-console.log('EduHub App initialized successfully! 🎓');

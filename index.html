@@ -3,1109 +3,585 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Okul Projesi | GitHub Pages</title>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary: #6C5CE7;
-            --secondary: #00D9FF;
-            --accent: #FF6B6B;
-            --dark: #0F0F1A;
-            --light: #F8F9FA;
-            --gradient: linear-gradient(135deg, #6C5CE7 0%, #00D9FF 100%);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Space Grotesk', sans-serif;
-            background: var(--dark);
-            color: var(--light);
-            overflow-x: hidden;
-            line-height: 1.6;
-        }
-
-        /* Giriş Ekranı (Login) */
-        .login-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--dark);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-            transition: opacity 0.5s, visibility 0.5s;
-        }
-
-        .login-screen.hidden {
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
-        }
-
-        .login-container {
-            text-align: center;
-            max-width: 600px;
-            padding: 2rem;
-        }
-
-        .login-title {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            background: var(--gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .login-subtitle {
-            color: rgba(255,255,255,0.7);
-            margin-bottom: 3rem;
-            font-size: 1.2rem;
-        }
-
-        .class-selection {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1.5rem;
-            max-width: 400px;
-            margin: 0 auto;
-        }
-
-        .class-btn {
-            padding: 2rem;
-            background: rgba(255,255,255,0.05);
-            border: 2px solid rgba(255,255,255,0.1);
-            border-radius: 20px;
-            color: white;
-            font-size: 2rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .class-btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--gradient);
-            opacity: 0;
-            transition: opacity 0.3s;
-            z-index: -1;
-        }
-
-        .class-btn:hover {
-            transform: translateY(-5px);
-            border-color: var(--primary);
-            box-shadow: 0 10px 30px rgba(108, 92, 231, 0.3);
-        }
-
-        .class-btn:hover::before {
-            opacity: 0.2;
-        }
-
-        .class-btn.active {
-            background: var(--gradient);
-            border-color: transparent;
-            box-shadow: 0 10px 30px rgba(108, 92, 231, 0.5);
-        }
-
-        .class-label {
-            display: block;
-            font-size: 0.9rem;
-            margin-top: 0.5rem;
-            opacity: 0.7;
-            font-weight: 400;
-        }
-
-        .login-btn {
-            margin-top: 2rem;
-            padding: 1rem 3rem;
-            background: var(--gradient);
-            border: none;
-            border-radius: 50px;
-            color: white;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.3s;
-            pointer-events: none;
-        }
-
-        .login-btn.visible {
-            opacity: 1;
-            transform: translateY(0);
-            pointer-events: all;
-        }
-
-        .login-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(108, 92, 231, 0.4);
-        }
-
-        /* Ana Uygulama */
-        .app-container {
-            opacity: 0;
-            transition: opacity 0.5s;
-        }
-
-        .app-container.visible {
-            opacity: 1;
-        }
-
-        /* Top Bar */
-        .top-bar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 70px;
-            background: rgba(15, 15, 26, 0.95);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 5%;
-            z-index: 1000;
-        }
-
-        /* Sol Üst - Profil */
-        .profile-section {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            cursor: pointer;
-            padding: 0.5rem;
-            border-radius: 12px;
-            transition: all 0.3s;
-        }
-
-        .profile-section:hover {
-            background: rgba(255,255,255,0.05);
-        }
-
-        .profile-avatar {
-            width: 45px;
-            height: 45px;
-            background: var(--gradient);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 1.2rem;
-            border: 2px solid rgba(255,255,255,0.2);
-        }
-
-        .profile-info {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .profile-class {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--secondary);
-        }
-
-        .profile-role {
-            font-size: 0.8rem;
-            color: rgba(255,255,255,0.6);
-        }
-
-        /* Sağ Üst - Menü Butonu */
-        .menu-btn {
-            width: 50px;
-            height: 50px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 12px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .menu-btn:hover {
-            background: rgba(255,255,255,0.1);
-            border-color: var(--secondary);
-        }
-
-        .menu-btn span {
-            width: 24px;
-            height: 3px;
-            background: white;
-            border-radius: 2px;
-            transition: all 0.3s;
-        }
-
-        .menu-btn.active span:nth-child(1) {
-            transform: rotate(45deg) translate(5px, 5px);
-        }
-
-        .menu-btn.active span:nth-child(2) {
-            opacity: 0;
-        }
-
-        .menu-btn.active span:nth-child(3) {
-            transform: rotate(-45deg) translate(5px, -5px);
-        }
-
-        /* Yan Menü (Sidebar) */
-        .sidebar {
-            position: fixed;
-            top: 70px;
-            right: -100%;
-            width: 300px;
-            height: calc(100% - 70px);
-            background: rgba(15, 15, 26, 0.98);
-            backdrop-filter: blur(20px);
-            border-left: 1px solid rgba(255,255,255,0.1);
-            transition: right 0.3s;
-            z-index: 999;
-            padding: 2rem;
-        }
-
-        .sidebar.open {
-            right: 0;
-        }
-
-        .sidebar-menu {
-            list-style: none;
-        }
-
-        .sidebar-menu li {
-            margin-bottom: 1rem;
-        }
-
-        .sidebar-menu a {
-            display: block;
-            padding: 1rem;
-            color: white;
-            text-decoration: none;
-            border-radius: 12px;
-            transition: all 0.3s;
-            border: 1px solid transparent;
-        }
-
-        .sidebar-menu a:hover {
-            background: rgba(108, 92, 231, 0.2);
-            border-color: var(--primary);
-            transform: translateX(5px);
-        }
-
-        .sidebar-divider {
-            height: 1px;
-            background: rgba(255,255,255,0.1);
-            margin: 2rem 0;
-        }
-
-        .logout-btn {
-            width: 100%;
-            padding: 1rem;
-            background: rgba(255, 107, 107, 0.2);
-            border: 1px solid var(--accent);
-            border-radius: 12px;
-            color: var(--accent);
-            cursor: pointer;
-            transition: all 0.3s;
-            font-weight: 600;
-        }
-
-        .logout-btn:hover {
-            background: var(--accent);
-            color: white;
-        }
-
-        /* Profil Modal */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.8);
-            backdrop-filter: blur(5px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s;
-        }
-
-        .modal-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .modal-content {
-            background: rgba(15, 15, 26, 0.95);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 24px;
-            padding: 2rem;
-            max-width: 500px;
-            width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
-            transform: scale(0.9);
-            transition: transform 0.3s;
-        }
-
-        .modal-overlay.active .modal-content {
-            transform: scale(1);
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-        }
-
-        .modal-title {
-            font-size: 1.5rem;
-            color: var(--secondary);
-        }
-
-        .modal-close {
-            width: 40px;
-            height: 40px;
-            background: rgba(255,255,255,0.1);
-            border: none;
-            border-radius: 50%;
-            color: white;
-            font-size: 1.5rem;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .modal-close:hover {
-            background: var(--accent);
-            transform: rotate(90deg);
-        }
-
-        /* Profil Butonları Grid */
-        .profile-actions {
-            display: grid;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .profile-action-btn {
-            padding: 1.2rem;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 16px;
-            color: white;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            text-align: left;
-        }
-
-        .profile-action-btn:hover {
-            background: rgba(108, 92, 231, 0.2);
-            border-color: var(--primary);
-            transform: translateX(5px);
-        }
-
-        .profile-action-btn i {
-            font-size: 1.5rem;
-        }
-
-        /* Form Stilleri */
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: rgba(255,255,255,0.9);
-            font-weight: 500;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 1rem;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 12px;
-            color: white;
-            font-family: inherit;
-            font-size: 1rem;
-            transition: all 0.3s;
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: var(--secondary);
-            background: rgba(255,255,255,0.1);
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-        }
-
-        .submit-btn {
-            width: 100%;
-            padding: 1rem;
-            background: var(--gradient);
-            border: none;
-            border-radius: 12px;
-            color: white;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .submit-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(108, 92, 231, 0.4);
-        }
-
-        /* Profil Kartı Gösterimi */
-        .profile-card {
-            background: rgba(108, 92, 231, 0.1);
-            border: 1px solid var(--primary);
-            border-radius: 16px;
-            padding: 1.5rem;
-            margin-top: 1.5rem;
-        }
-
-        .profile-card h3 {
-            color: var(--secondary);
-            margin-bottom: 1rem;
-            font-size: 1.2rem;
-        }
-
-        .profile-detail {
-            display: flex;
-            justify-content: space-between;
-            padding: 0.8rem 0;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .profile-detail:last-child {
-            border-bottom: none;
-        }
-
-        .profile-detail span:first-child {
-            color: rgba(255,255,255,0.7);
-        }
-
-        .profile-detail span:last-child {
-            font-weight: 600;
-            color: var(--secondary);
-        }
-
-        /* Ana Menü Butonları */
-        .main-nav {
-            position: fixed;
-            top: 70px;
-            left: 0;
-            right: 0;
-            background: rgba(15, 15, 26, 0.9);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            padding: 1rem 5%;
-            z-index: 998;
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .nav-btn {
-            padding: 0.8rem 1.5rem;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 50px;
-            color: white;
-            text-decoration: none;
-            font-weight: 500;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .nav-btn:hover, .nav-btn.active {
-            background: var(--gradient);
-            border-color: transparent;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(108, 92, 231, 0.3);
-        }
-
-        /* Ana İçerik */
-        .main-content {
-            margin-top: 140px;
-            min-height: calc(100vh - 140px);
-            padding: 2rem 5%;
-        }
-
-        /* Diğer Stiller */
-        .bg-animation {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            overflow: hidden;
-        }
-
-        .bg-animation span {
-            position: absolute;
-            width: 50px;
-            height: 50px;
-            background: rgba(108, 92, 231, 0.1);
-            border-radius: 50%;
-            animation: float 15s infinite ease-in-out;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.3; }
-            50% { transform: translateY(-100vh) rotate(360deg); opacity: 0.8; }
-        }
-
-        .hero {
-            min-height: calc(100vh - 140px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-        }
-
-        .hero-content h1 {
-            font-size: clamp(2rem, 6vw, 4rem);
-            margin-bottom: 1rem;
-            background: var(--gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .class-selection {
-                grid-template-columns: 1fr;
-            }
-            
-            .sidebar {
-                width: 100%;
-            }
-
-            .main-nav {
-                gap: 0.5rem;
-            }
-
-            .nav-btn {
-                padding: 0.6rem 1rem;
-                font-size: 0.9rem;
-            }
-
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* Gizli class */
-        .hidden-section {
-            display: none;
-        }
-
-        .hidden-section.active {
-            display: block;
-        }
-    </style>
+    <title>EduHub - Eğitim Platformu</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDK - Daha sonra aktif edilecek -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+<base target="_blank">
 </head>
 <body>
-    <!-- Giriş Ekranı -->
-    <div class="login-screen" id="loginScreen">
-        <div class="login-container">
-            <h1 class="login-title">Hoş Geldiniz</h1>
-            <p class="login-subtitle">Sınıfınızı seçerek devam edin</p>
-            
-            <div class="class-selection">
-                <button class="class-btn" data-class="9">
-                    9
-                    <span class="class-label">9. Sınıf</span>
-                </button>
-                <button class="class-btn" data-class="10">
-                    10
-                    <span class="class-label">10. Sınıf</span>
-                </button>
-                <button class="class-btn" data-class="11">
-                    11
-                    <span class="class-label">11. Sınıf</span>
-                </button>
-                <button class="class-btn" data-class="12">
-                    12
-                    <span class="class-label">12. Sınıf</span>
-                </button>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loader">
+            <div class="book">
+                <div class="page"></div>
+                <div class="page"></div>
+                <div class="page"></div>
             </div>
-            
-            <button class="login-btn" id="loginBtn">Devam Et →</button>
+            <p>EduHub Yükleniyor...</p>
         </div>
     </div>
 
-    <!-- Ana Uygulama -->
-    <div class="app-container" id="appContainer">
-        <!-- Animated Background -->
-        <div class="bg-animation" id="bgAnimation"></div>
+    <!-- Auth Container -->
+    <div id="auth-container" class="auth-container">
+        <div class="auth-box">
+            <div class="auth-logo">
+                <i class="fas fa-graduation-cap"></i>
+                <h1>EduHub</h1>
+                <p>Eğitim ve Sınav Platformu</p>
+            </div>
 
-        <!-- Top Bar -->
-        <header class="top-bar">
-            <!-- Sol Üst - Profil -->
-            <div class="profile-section" id="profileSection">
-                <div class="profile-avatar" id="profileAvatar">9</div>
-                <div class="profile-info">
-                    <span class="profile-class" id="profileClass">9. Sınıf</span>
-                    <span class="profile-role" id="profileRole">Öğrenci</span>
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="showAuthTab('login')">Giriş Yap</button>
+                <button class="auth-tab" onclick="showAuthTab('register')">Kayıt Ol</button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form" class="auth-form">
+                <div class="input-group">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="login-username" placeholder="Kullanıcı Adı" required>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="login-password" placeholder="Şifre" required>
+                    <i class="fas fa-eye toggle-password" onclick="togglePassword('login-password')"></i>
+                </div>
+                <button type="submit" class="auth-btn">
+                    <i class="fas fa-sign-in-alt"></i> Giriş Yap
+                </button>
+                <p class="auth-link" onclick="showForgotPassword()">Şifremi Unuttum</p>
+            </form>
+
+            <!-- Register Form -->
+            <form id="register-form" class="auth-form hidden">
+                <div class="input-group">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="reg-username" placeholder="Kullanıcı Adı" required>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" id="reg-email" placeholder="E-posta" required>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="reg-password" placeholder="Şifre (min 6 karakter)" required>
+                    <i class="fas fa-eye toggle-password" onclick="togglePassword('reg-password')"></i>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-calendar"></i>
+                    <input type="date" id="reg-birthdate" required>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-image"></i>
+                    <input type="file" id="reg-avatar" accept="image/*">
+                </div>
+                <button type="submit" class="auth-btn">
+                    <i class="fas fa-user-plus"></i> Kayıt Ol
+                </button>
+            </form>
+
+            <!-- Forgot Password -->
+            <form id="forgot-form" class="auth-form hidden">
+                <div class="input-group">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" id="forgot-email" placeholder="E-posta Adresiniz" required>
+                </div>
+                <button type="submit" class="auth-btn">
+                    <i class="fas fa-paper-plane"></i> Şifre Sıfırlama Linki Gönder
+                </button>
+                <p class="auth-link" onclick="showAuthTab('login')">Girişe Dön</p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="main-app" class="main-app hidden">
+        <!-- Header -->
+        <header class="main-header">
+            <div class="header-left">
+                <button class="profile-btn" onclick="toggleProfile()">
+                    <img id="header-avatar" src="https://via.placeholder.com/40" alt="Avatar">
+                    <span id="header-username">Kullanıcı</span>
+                </button>
+            </div>
+
+            <div class="header-center">
+                <div class="yks-counter">
+                    <i class="fas fa-hourglass-half"></i>
+                    <span id="yks-timer">YKS'ye kalan: Hesaplanıyor...</span>
                 </div>
             </div>
 
-            <!-- Sağ Üst - Menü Butonu -->
-            <button class="menu-btn" id="menuBtn">
-                <span></span>
-                <span></span>
-                <span></span>
-            </button>
+            <div class="header-right">
+                <button class="menu-btn" onclick="toggleMenu()">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
         </header>
 
-        <!-- Ana Menü Butonları -->
-        <nav class="main-nav">
-            <button class="nav-btn active" data-section="dersler">
-                📚 Dersler
-            </button>
-            <button class="nav-btn" data-section="kitaplar">
-                📖 Kitaplar
-            </button>
-            <button class="nav-btn" data-section="odevler">
-                📝 Ödevler
-            </button>
-            <button class="nav-btn" data-section="notlar">
-                📊 Notlar
-            </button>
-        </nav>
+        <!-- Profile Panel -->
+        <div id="profile-panel" class="side-panel left-panel">
+            <div class="panel-header">
+                <img id="profile-avatar" src="https://via.placeholder.com/100" alt="Avatar">
+                <h3 id="profile-name">Kullanıcı Adı</h3>
+                <p id="profile-role">Öğrenci</p>
+                <p id="profile-zodiac">Burç: -</p>
+            </div>
+            <div class="panel-content">
+                <div class="profile-section">
+                    <h4><i class="fas fa-info-circle"></i> Hakkımda</h4>
+                    <p id="profile-bio">Henüz açıklama eklenmemiş.</p>
+                    <button class="edit-btn" onclick="editBio()">
+                        <i class="fas fa-edit"></i> Düzenle
+                    </button>
+                </div>
 
-        <!-- Yan Menü -->
-        <nav class="sidebar" id="sidebar">
-            <ul class="sidebar-menu">
-                <li><a href="#home">🏠 Ana Sayfa</a></li>
-                <li><a href="#documents">📄 Belgeler</a></li>
-                <li><a href="#games">🎮 Oyunlar</a></li>
-                <li><a href="#resources">📚 Kaynaklar</a></li>
-                <li><a href="#settings">⚙️ Ayarlar</a></li>
-            </ul>
-            
-            <div class="sidebar-divider"></div>
-            
-            <button class="logout-btn" id="logoutBtn">🚪 Çıkış Yap</button>
-        </nav>
+                <div class="profile-section">
+                    <h4><i class="fas fa-trophy"></i> Başarılarım</h4>
+                    <div id="user-scores" class="scores-list">
+                        <p>Henüz puan yok</p>
+                    </div>
+                </div>
 
-        <!-- Ana İçerik -->
+                <div class="profile-actions">
+                    <button class="action-btn" onclick="showRanking()">
+                        <i class="fas fa-list-ol"></i> Sıralamayı Gör
+                    </button>
+                    <button class="action-btn" onclick="changeUsername()">
+                        <i class="fas fa-user-edit"></i> Kullanıcı Adı Değiştir
+                    </button>
+                    <button class="action-btn" onclick="resetPassword()">
+                        <i class="fas fa-key"></i> Şifre Sıfırla
+                    </button>
+                    <button class="action-btn danger" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i> Çıkış Yap
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Menu Panel -->
+        <div id="menu-panel" class="side-panel right-panel">
+            <div class="panel-header">
+                <h3><i class="fas fa-th-large"></i> Menü</h3>
+            </div>
+            <div class="menu-grid">
+                <button class="menu-item" onclick="openTests()">
+                    <i class="fas fa-file-alt"></i>
+                    <span>Testler</span>
+                </button>
+                <button class="menu-item" onclick="openTestBooks()">
+                    <i class="fas fa-book"></i>
+                    <span>Test Kitapları</span>
+                </button>
+                <button class="menu-item" onclick="openExams()">
+                    <i class="fas fa-clipboard-list"></i>
+                    <span>Deneme Sınavları</span>
+                </button>
+                <button class="menu-item" onclick="showRanking()">
+                    <i class="fas fa-medal"></i>
+                    <span>Sıralama</span>
+                </button>
+                <button class="menu-item" onclick="openBestScores()">
+                    <i class="fas fa-star"></i>
+                    <span>En İyi Dereceler</span>
+                </button>
+                <button class="menu-item" onclick="openTeachers()">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                    <span>Öğretmenler</span>
+                </button>
+                <button class="menu-item admin-only hidden" onclick="openAdminDM()">
+                    <i class="fas fa-envelope"></i>
+                    <span>Yönetici DM</span>
+                </button>
+                <button class="menu-item" onclick="openWritings()">
+                    <i class="fas fa-pen"></i>
+                    <span>Yazılılar</span>
+                </button>
+                <button class="menu-item" onclick="openScenarios()">
+                    <i class="fas fa-theater-masks"></i>
+                    <span>Senaryolar</span>
+                </button>
+                <button class="menu-item" onclick="openSchedule()">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Ders Programı</span>
+                </button>
+                <button class="menu-item" onclick="openSchoolPhotos()">
+                    <i class="fas fa-images"></i>
+                    <span>Okul Fotoğrafları</span>
+                </button>
+                <button class="menu-item" onclick="openSchoolTeachers()">
+                    <i class="fas fa-users"></i>
+                    <span>Okul Öğretmenleri</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Notifications Panel -->
+        <div id="notifications-panel" class="side-panel right-panel">
+            <div class="panel-header">
+                <h3><i class="fas fa-bell"></i> Bildirimler</h3>
+                <button class="close-btn" onclick="toggleNotifications()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="notifications-list" class="notifications-list">
+                <p class="empty-notif">Henüz bildirim yok</p>
+            </div>
+        </div>
+
+        <!-- Settings Panel -->
+        <div id="settings-panel" class="side-panel right-panel">
+            <div class="panel-header">
+                <h3><i class="fas fa-cog"></i> Ayarlar</h3>
+                <button class="close-btn" onclick="toggleSettings()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="settings-content">
+                <div class="setting-item">
+                    <span><i class="fas fa-moon"></i> Karanlık Mod</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="dark-mode-toggle" onchange="toggleDarkMode()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <span><i class="fas fa-volume-up"></i> Ses Efektleri</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="sound-toggle" checked onchange="toggleSound()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <span><i class="fas fa-music"></i> Arka Plan Müziği</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="music-toggle" onchange="toggleMusic()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <span><i class="fas fa-ban"></i> Engellenen Kullanıcılar</span>
+                    <button class="small-btn" onclick="showBlockedUsers()">
+                        <i class="fas fa-list"></i> Listele
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
         <main class="main-content">
-            <!-- Dersler Bölümü -->
-            <section class="hidden-section active" id="dersler">
-                <div class="hero">
-                    <div class="hero-content">
-                        <h1>Dersler</h1>
-                        <p>Sınıfınıza özel ders içerikleri ve materyaller.</p>
-                    </div>
+            <!-- Global Chat -->
+            <div class="chat-container">
+                <div class="chat-header">
+                    <h3><i class="fas fa-comments"></i> Global Sohbet</h3>
+                    <span id="online-count"><i class="fas fa-circle online"></i> 0 çevrimiçi</span>
                 </div>
-            </section>
-
-            <!-- Kitaplar Bölümü -->
-            <section class="hidden-section" id="kitaplar">
-                <div class="hero">
-                    <div class="hero-content">
-                        <h1>Kitaplar</h1>
-                        <p>Okuma listesi ve kaynak kitaplar.</p>
-                    </div>
+                <div id="chat-messages" class="chat-messages">
+                    <!-- Messages will be loaded here -->
                 </div>
-            </section>
-
-            <!-- Ödevler Bölümü -->
-            <section class="hidden-section" id="odevler">
-                <div class="hero">
-                    <div class="hero-content">
-                        <h1>Ödevler</h1>
-                        <p>Güncel ödevler ve teslim tarihleri.</p>
+                <div class="chat-input-area">
+                    <button class="attach-btn" onclick="showAttachMenu()">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    <div id="attach-menu" class="attach-menu hidden">
+                        <button onclick="attachFile()">
+                            <i class="fas fa-file"></i> Dosya
+                        </button>
+                        <button onclick="attachImage()">
+                            <i class="fas fa-image"></i> Fotoğraf
+                        </button>
+                        <button onclick="toggleEmojiPicker()">
+                            <i class="fas fa-smile"></i> Emoji
+                        </button>
+                        <button onclick="attachGIF()">
+                            <i class="fas fa-gif"></i> GIF
+                        </button>
                     </div>
-                </div>
-            </section>
-
-            <!-- Notlar Bölümü -->
-            <section class="hidden-section" id="notlar">
-                <div class="hero">
-                    <div class="hero-content">
-                        <h1>Notlar</h1>
-                        <p>Sınav notları ve değerlendirmeler.</p>
+                    <div id="emoji-picker" class="emoji-picker hidden">
+                        <!-- Emojis will be populated by JS -->
                     </div>
+                    <input type="text" id="message-input" placeholder="Mesajınızı yazın..." onkeypress="handleMessageKeypress(event)">
+                    <button class="send-btn" onclick="sendMessage()">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
                 </div>
-            </section>
+            </div>
         </main>
+
+        <!-- Floating Action Buttons -->
+        <div class="fab-container">
+            <button class="fab main-fab" onclick="toggleFAB()">
+                <i class="fas fa-plus"></i>
+            </button>
+            <div class="fab-menu">
+                <button class="fab" onclick="toggleNotifications()" title="Bildirimler">
+                    <i class="fas fa-bell"></i>
+                    <span id="notif-badge" class="badge hidden">0</span>
+                </button>
+                <button class="fab" onclick="toggleSettings()" title="Ayarlar">
+                    <i class="fas fa-cog"></i>
+                </button>
+                <button class="fab admin-only hidden" onclick="openAdminPanel()" title="Yönetici Paneli">
+                    <i class="fas fa-shield-alt"></i>
+                </button>
+            </div>
+        </div>
     </div>
 
-    <!-- Profil Modal -->
-    <div class="modal-overlay" id="profileModal">
+    <!-- Modals -->
+    <!-- Test Solving Modal -->
+    <div id="test-modal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h2 id="test-title">Test Çöz</h2>
+                <button class="close-btn" onclick="closeModal('test-modal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="test-container" class="test-container">
+                    <!-- Test content will be loaded here -->
+                </div>
+                <div class="test-tools">
+                    <button class="tool-btn" onclick="selectTool('pen')" title="Kalem">
+                        <i class="fas fa-pen"></i>
+                    </button>
+                    <button class="tool-btn" onclick="selectTool('highlighter')" title="Fosforlu Kalem">
+                        <i class="fas fa-highlighter"></i>
+                    </button>
+                    <button class="tool-btn" onclick="selectTool('eraser')" title="Silgi">
+                        <i class="fas fa-eraser"></i>
+                    </button>
+                    <input type="color" id="pen-color" value="#000000" onchange="changePenColor()">
+                    <input type="range" id="pen-size" min="1" max="20" value="2" onchange="changePenSize()">
+                    <button class="tool-btn" onclick="clearCanvas()" title="Temizle">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    <button class="tool-btn" onclick="toggleCalculator()" title="Hesap Makinesi">
+                        <i class="fas fa-calculator"></i>
+                    </button>
+                </div>
+                <canvas id="drawing-canvas" class="drawing-canvas"></canvas>
+            </div>
+            <div class="modal-footer">
+                <button class="btn secondary" onclick="closeModal('test-modal')">Kapat</button>
+                <button class="btn primary" onclick="submitTest()">Testi Bitir</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ranking Modal -->
+    <div id="ranking-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title">Profil Menüsü</h2>
-                <button class="modal-close" id="modalClose">×</button>
-            </div>
-
-            <!-- Profil Butonları -->
-            <div class="profile-actions" id="profileActions">
-                <button class="profile-action-btn" id="createProfileBtn">
-                    <span>👤</span>
-                    <div>
-                        <div style="font-weight: 600;">Kendi Profilini Oluştur</div>
-                        <div style="font-size: 0.85rem; opacity: 0.7;">Kişisel bilgilerini ekle</div>
-                    </div>
-                </button>
-                <button class="profile-action-btn" id="changeClassBtn">
-                    <span>🔄</span>
-                    <div>
-                        <div style="font-weight: 600;">Sınıf Değiştir</div>
-                        <div style="font-size: 0.85rem; opacity: 0.7;">Farklı bir sınıfa geç</div>
-                    </div>
-                </button>
-                <button class="profile-action-btn" id="teacherModeBtn">
-                    <span>👨‍🏫</span>
-                    <div>
-                        <div style="font-weight: 600;">Öğretmen Oturumu</div>
-                        <div style="font-size: 0.85rem; opacity: 0.7;">Öğretmen görünümüne geç</div>
-                    </div>
+                <h2><i class="fas fa-trophy"></i> Genel Sıralama</h2>
+                <button class="close-btn" onclick="closeModal('ranking-modal')">
+                    <i class="fas fa-times"></i>
                 </button>
             </div>
-
-            <!-- Profil Oluşturma Formu -->
-            <div id="profileFormSection" style="display: none;">
-                <h3 style="color: var(--secondary); margin-bottom: 1.5rem;">Profil Bilgileri</h3>
-                <form id="profileForm">
-                    <div class="form-group">
-                        <label for="schoolNumber">Okul Numarası</label>
-                        <input type="text" id="schoolNumber" placeholder="Örn: 1234" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="fullName">İsim Soyisim</label>
-                        <input type="text" id="fullName" placeholder="Ad Soyad" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="studentClass">Sınıf</label>
-                        <input type="text" id="studentClass" readonly>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="average">Ortalama</label>
-                            <input type="number" id="average" placeholder="85.5" step="0.1" min="0" max="100">
-                        </div>
-                        <div class="form-group">
-                            <label for="net">Netim</label>
-                            <input type="number" id="net" placeholder="75.5" step="0.1" min="0">
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="score">Puanım</label>
-                        <input type="number" id="score" placeholder="450" min="0">
-                    </div>
-                    
-                    <button type="submit" class="submit-btn">Profili Kaydet 💾</button>
-                </form>
-
-                <!-- Profil Kartı -->
-                <div class="profile-card" id="profileCard" style="display: none;">
-                    <h3>📋 Profil Özeti</h3>
-                    <div class="profile-detail">
-                        <span>Okul No:</span>
-                        <span id="displaySchoolNumber">-</span>
-                    </div>
-                    <div class="profile-detail">
-                        <span>İsim Soyisim:</span>
-                        <span id="displayFullName">-</span>
-                    </div>
-                    <div class="profile-detail">
-                        <span>Sınıf:</span>
-                        <span id="displayClass">-</span>
-                    </div>
-                    <div class="profile-detail">
-                        <span>Ortalama:</span>
-                        <span id="displayAverage">-</span>
-                    </div>
-                    <div class="profile-detail">
-                        <span>Net:</span>
-                        <span id="displayNet">-</span>
-                    </div>
-                    <div class="profile-detail">
-                        <span>Puan:</span>
-                        <span id="displayScore">-</span>
-                    </div>
+            <div class="modal-body">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="ranking-search" placeholder="Kullanıcı ara..." onkeyup="searchRanking()">
+                </div>
+                <div class="stats-bar">
+                    <span>Toplam Kullanıcı: <strong id="total-users">0</strong></span>
+                </div>
+                <div id="ranking-list" class="ranking-list">
+                    <!-- Ranking items will be loaded here -->
                 </div>
             </div>
         </div>
     </div>
 
-    <script>
-        // Sınıf Seçimi ve Login
-        const classBtns = document.querySelectorAll('.class-btn');
-        const loginBtn = document.getElementById('loginBtn');
-        const loginScreen = document.getElementById('loginScreen');
-        const appContainer = document.getElementById('appContainer');
-        
-        let selectedClass = null;
-        let userProfile = null;
-        let isTeacherMode = false;
+    <!-- Admin Panel Modal -->
+    <div id="admin-modal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h2><i class="fas fa-shield-alt"></i> Yönetici Paneli</h2>
+                <button class="close-btn" onclick="closeModal('admin-modal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="admin-tabs">
+                    <button class="admin-tab active" onclick="showAdminTab('upload')">
+                        <i class="fas fa-upload"></i> İçerik Yükle
+                    </button>
+                    <button class="admin-tab" onclick="showAdminTab('notifications')">
+                        <i class="fas fa-bell"></i> Bildirim Gönder
+                    </button>
+                    <button class="admin-tab" onclick="showAdminTab('users')">
+                        <i class="fas fa-users"></i> Kullanıcı Yönetimi
+                    </button>
+                    <button class="admin-tab" onclick="showAdminTab('data')">
+                        <i class="fas fa-database"></i> Veri Yönetimi
+                    </button>
+                </div>
 
-        // Sınıf butonlarına tıklama
-        classBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                classBtns.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                selectedClass = btn.dataset.class;
-                loginBtn.classList.add('visible');
-            });
-        });
+                <!-- Upload Section -->
+                <div id="admin-upload" class="admin-section">
+                    <div class="upload-types">
+                        <button class="upload-type-btn active" onclick="setUploadType('test')">Test</button>
+                        <button class="upload-type-btn" onclick="setUploadType('exam')">Deneme</button>
+                        <button class="upload-type-btn" onclick="setUploadType('book')">Test Kitabı</button>
+                    </div>
+                    <form id="upload-form" class="upload-form">
+                        <div class="input-group">
+                            <label>Başlık</label>
+                            <input type="text" id="upload-title" required>
+                        </div>
+                        <div class="input-group">
+                            <label>Açıklama</label>
+                            <textarea id="upload-desc"></textarea>
+                        </div>
+                        <div class="input-group">
+                            <label>Kategori</label>
+                            <select id="upload-category">
+                                <option value="tyt">TYT</option>
+                                <option value="ayt">AYT</option>
+                                <option value="ydt">YDT</option>
+                                <option value="other">Diğer</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Dosya Yükle (PDF, Word, Image)</label>
+                            <input type="file" id="upload-file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg">
+                        </div>
+                        <div id="questions-area" class="questions-area">
+                            <h4>Sorular</h4>
+                            <div id="questions-list"></div>
+                            <button type="button" class="btn secondary" onclick="addQuestion()">
+                                <i class="fas fa-plus"></i> Soru Ekle
+                            </button>
+                        </div>
+                        <button type="submit" class="btn primary">
+                            <i class="fas fa-upload"></i> Yükle
+                        </button>
+                    </form>
+                </div>
 
-        // Giriş yap
-        loginBtn.addEventListener('click', () => {
-            if (selectedClass) {
-                localStorage.setItem('userClass', selectedClass);
-                loginScreen.classList.add('hidden');
-                setTimeout(() => {
-                    appContainer.classList.add('visible');
-                    initializeApp(selectedClass);
-                }, 500);
-            }
-        });
+                <!-- Notifications Section -->
+                <div id="admin-notifications" class="admin-section hidden">
+                    <form id="notif-form">
+                        <div class="input-group">
+                            <label>Bildirim Türü</label>
+                            <select id="notif-type">
+                                <option value="all">Herkese</option>
+                                <option value="specific">Belirli Kullanıcı</option>
+                            </select>
+                        </div>
+                        <div id="specific-user-group" class="input-group hidden">
+                            <label>Kullanıcı Adı</label>
+                            <input type="text" id="notif-username">
+                        </div>
+                        <div class="input-group">
+                            <label>Başlık</label>
+                            <input type="text" id="notif-title" required>
+                        </div>
+                        <div class="input-group">
+                            <label>Mesaj</label>
+                            <textarea id="notif-message" required></textarea>
+                        </div>
+                        <button type="submit" class="btn primary">
+                            <i class="fas fa-paper-plane"></i> Gönder
+                        </button>
+                    </form>
+                </div>
 
-        // Uygulamayı başlat
-        function initializeApp(userClass) {
-            document.getElementById('profileAvatar').textContent = userClass;
-            document.getElementById('profileClass').textContent = userClass + '. Sınıf';
-            document.getElementById('studentClass').value = userClass + '. Sınıf';
-            
-            // Kayıtlı profil varsa yükle
-            const savedProfile = localStorage.getItem('userProfile');
-            if (savedProfile) {
-                userProfile = JSON.parse(savedProfile);
-                updateProfileDisplay();
-            }
+                <!-- User Management -->
+                <div id="admin-users" class="admin-section hidden">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="user-search" placeholder="Kullanıcı ara..." onkeyup="searchUsers()">
+                    </div>
+                    <div id="users-list" class="users-list"></div>
+                </div>
 
-            // Arka plan animasyonu
-            const bgAnimation = document.getElementById('bgAnimation');
-            for (let i = 0; i < 15; i++) {
-                const span = document.createElement('span');
-                span.style.left = Math.random() * 100 + '%';
-                span.style.animationDelay = Math.random() * 15 + 's';
-                span.style.animationDuration = (Math.random() * 10 + 10) + 's';
-                bgAnimation.appendChild(span);
-            }
-        }
+                <!-- Data Management -->
+                <div id="admin-data" class="admin-section hidden">
+                    <div class="data-categories">
+                        <button class="data-cat-btn" onclick="manageData('writings')">
+                            <i class="fas fa-pen"></i> Yazılılar
+                        </button>
+                        <button class="data-cat-btn" onclick="manageData('scenarios')">
+                            <i class="fas fa-theater-masks"></i> Senaryolar
+                        </button>
+                        <button class="data-cat-btn" onclick="manageData('schedule')">
+                            <i class="fas fa-calendar"></i> Ders Programı
+                        </button>
+                        <button class="data-cat-btn" onclick="manageData('photos')">
+                            <i class="fas fa-images"></i> Okul Fotoğrafları
+                        </button>
+                        <button class="data-cat-btn" onclick="manageData('teachers')">
+                            <i class="fas fa-users"></i> Okul Öğretmenleri
+                        </button>
+                    </div>
+                    <div id="data-management-area"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        // Menü butonu
-        const menuBtn = document.getElementById('menuBtn');
-        const sidebar = document.getElementById('sidebar');
+    <!-- Calculator Modal -->
+    <div id="calculator-modal" class="modal small">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-calculator"></i> Hesap Makinesi</h3>
+                <button class="close-btn" onclick="closeModal('calculator-modal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="calculator">
+                <input type="text" id="calc-display" readonly>
+                <div class="calc-buttons">
+                    <button onclick="calcClear()">C</button>
+                    <button onclick="calcAppend('/')">/</button>
+                    <button onclick="calcAppend('*')">×</button>
+                    <button onclick="calcBackspace()">←</button>
+                    <button onclick="calcAppend('7')">7</button>
+                    <button onclick="calcAppend('8')">8</button>
+                    <button onclick="calcAppend('9')">9</button>
+                    <button onclick="calcAppend('-')">-</button>
+                    <button onclick="calcAppend('4')">4</button>
+                    <button onclick="calcAppend('5')">5</button>
+                    <button onclick="calcAppend('6')">6</button>
+                    <button onclick="calcAppend('+')">+</button>
+                    <button onclick="calcAppend('1')">1</button>
+                    <button onclick="calcAppend('2')">2</button>
+                    <button onclick="calcAppend('3')">3</button>
+                    <button onclick="calcCalculate()" class="equals">=</button>
+                    <button onclick="calcAppend('0')" class="zero">0</button>
+                    <button onclick="calcAppend('.')">.</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        menuBtn.addEventListener('click', () => {
-            menuBtn.classList.toggle('active');
-            sidebar.classList.toggle('open');
-        });
+    <!-- User Profile View Modal -->
+    <div id="user-profile-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Kullanıcı Profili</h2>
+                <button class="close-btn" onclick="closeModal('user-profile-modal')">
+                    <i class="fas="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="view-profile-content" class="profile-view">
+                <!-- Profile content will be loaded here -->
+            </div>
+        </div>
+    </div>
 
-        // Ana menü butonları
-        const navBtns = document.querySelectorAll('.nav-btn');
-        const sections = document.querySelectorAll('.hidden-section');
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
 
-        navBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                navBtns.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                
-                const targetSection = btn.dataset.section;
-                sections.forEach(section => {
-                    section.classList.remove('active');
-                    if (section.id === targetSection) {
-                        section.classList.add('active');
-                    }
-                });
-            });
-        });
-
-        // Profil Modal
-        const profileSection = document.getElementById('profileSection');
-        const profileModal = document.getElementById('profileModal');
-        const modalClose = document.getElementById('modalClose');
-        const profileActions = document.getElementById('profileActions');
-        const profileFormSection = document.getElementById('profileFormSection');
-        const createProfileBtn = document.getElementById('createProfileBtn');
-        const changeClassBtn = document.getElementById('changeClassBtn');
-        const teacherModeBtn = document.getElementById('teacherModeBtn');
-
-        // Profil bölümüne tıklama
-        profileSection.addEventListener('click', () => {
-            profileModal.classList.add('active');
-            // Her açılışta ana menüyü göster
-            profileActions.style.display = 'grid';
-            profileFormSection.style.display = 'none';
-        });
-
-        // Modal kapat
-        modalClose.addEventListener('click', () => {
-            profileModal.classList.remove('active');
-        });
-
-        // Modal dışına tıklayınca kapat
-        profileModal.addEventListener('click', (e) => {
-            if (e.target === profileModal) {
-                profileModal.classList.remove('active');
-            }
-        });
-
-        // Kendi Profilini Oluştur
-        createProfileBtn.addEventListener('click', () => {
-            profileActions.style.display = 'none';
-            profileFormSection.style.display = 'block';
-            
-            // Varsa mevcut verileri doldur
-            if (userProfile) {
-                document.getElementById('schoolNumber').value = userProfile.schoolNumber || '';
-                document.getElementById('fullName').value = userProfile.fullName || '';
-                document.getElementById('average').value = userProfile.average || '';
-                document.getElementById('net').value = userProfile.net || '';
-                document.getElementById('score').value = userProfile.score || '';
-            }
-        });
-
-        // Profil Formu Gönder
-        const profileForm = document.getElementById('profileForm');
-        const profileCard = document.getElementById('profileCard');
-
-        profileForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            
-            userProfile = {
-                schoolNumber: document.getElementById('schoolNumber').value,
-                fullName: document.getElementById('fullName').value,
-                class: document.getElementById('studentClass').value,
-                average: document.getElementById('average').value,
-                net: document.getElementById('net').value,
-                score: document.getElementById('score').value
-            };
-            
-            localStorage.setItem('userProfile', JSON.stringify(userProfile));
-            updateProfileDisplay();
-            
-            // Profil kartını göster
-            profileCard.style.display = 'block';
-            
-            // Başarı mesajı
-            setTimeout(() => {
-                alert('Profil başarıyla kaydedildi! ✅');
-            }, 300);
-        });
-
-        // Profil görünümünü güncelle
-        function updateProfileDisplay() {
-            if (!userProfile) return;
-            
-            document.getElementById('displaySchoolNumber').textContent = userProfile.schoolNumber;
-            document.getElementById('displayFullName').textContent = userProfile.fullName;
-            document.getElementById('displayClass').textContent = userProfile.class;
-            document.getElementById('displayAverage').textContent = userProfile.average || '-';
-            document.getElementById('displayNet').textContent = userProfile.net || '-';
-            document.getElementById('displayScore').textContent = userProfile.score || '-';
-            
-            // Profil kartını göster
-            profileCard.style.display = 'block';
-            
-            // Top bar'ı güncelle
-            if (userProfile.fullName) {
-                document.getElementById('profileRole').textContent = userProfile.fullName;
-            }
-        }
-
-        // Sınıf Değiştir
-        changeClassBtn.addEventListener('click', () => {
-            if (confirm('Sınıf değiştirmek için çıkış yapmanız gerekiyor. Onaylıyor musunuz?')) {
-                localStorage.removeItem('userClass');
-                localStorage.removeItem('userProfile');
-                location.reload();
-            }
-        });
-
-        // Öğretmen Oturumu
-        teacherModeBtn.addEventListener('click', () => {
-            isTeacherMode = !isTeacherMode;
-            
-            if (isTeacherMode) {
-                document.getElementById('profileRole').textContent = 'Öğretmen';
-                document.body.style.setProperty('--primary', '#FF6B6B');
-                document.body.style.setProperty('--gradient', 'linear-gradient(135deg, #FF6B6B 0%, #FFE66D 100%)');
-                alert('Öğretmen moduna geçildi! 👨‍🏫');
-            } else {
-                document.getElementById('profileRole').textContent = userProfile ? userProfile.fullName : 'Öğrenci';
-                document.body.style.setProperty('--primary', '#6C5CE7');
-                document.body.style.setProperty('--gradient', 'linear-gradient(135deg, #6C5CE7 0%, #00D9FF 100%)');
-                alert('Öğrenci moduna dönüldü! 👨‍🎓');
-            }
-            
-            profileModal.classList.remove('active');
-        });
-
-        // Çıkış yap
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            localStorage.removeItem('userClass');
-            localStorage.removeItem('userProfile');
-            location.reload();
-        });
-
-        // Sayfa yüklenince kontrol et
-        window.addEventListener('load', () => {
-            const savedClass = localStorage.getItem('userClass');
-            if (savedClass) {
-                loginScreen.classList.add('hidden');
-                appContainer.classList.add('visible');
-                initializeApp(savedClass);
-            }
-        });
-
-        // Menü linklerine tıklayınca kapat
-        document.querySelectorAll('.sidebar-menu a').forEach(link => {
-            link.addEventListener('click', () => {
-                menuBtn.classList.remove('active');
-                sidebar.classList.remove('open');
-            });
-        });
-    </script>
+    <script src="app.js"></script>
 </body>
 </html>

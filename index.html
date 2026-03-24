@@ -1,587 +1,620 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" data-theme="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EduHub - Eğitim Platformu</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Firebase SDK - Daha sonra aktif edilecek -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
-<base target="_blank">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StudyHub — YKS Hazırlık Platformu</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet" />
+  <!-- Firebase SDK — BURAYA KENDİ FIREBASE CONFIG'İNİ EKLE -->
+  <script type="module">
+    // import { initializeApp } from "https://www.gstatic.com/firebasejs/10.x.x/firebase-app.js";
+    // import { getAuth } from "...";
+    // import { getFirestore } from "...";
+    // import { getStorage } from "...";
+    // const firebaseConfig = { apiKey: "...", authDomain: "...", ... };
+    // window._firebaseApp = initializeApp(firebaseConfig);
+  </script>
 </head>
 <body>
-    <!-- Loading Screen -->
-    <div id="loading-screen" class="loading-screen">
-        <div class="loader">
-            <div class="book">
-                <div class="page"></div>
-                <div class="page"></div>
-                <div class="page"></div>
-            </div>
-            <p>EduHub Yükleniyor...</p>
-        </div>
+
+<!-- ════════════════ AUTH OVERLAY ════════════════ -->
+<div id="auth-overlay" class="auth-overlay active">
+  <div class="auth-bg-pattern"></div>
+  <div class="auth-card" id="auth-card">
+    <div class="auth-logo">
+      <span class="logo-icon">📚</span>
+      <h1>StudyHub</h1>
+      <p>YKS Hazırlık Platformu</p>
     </div>
 
-    <!-- Auth Container -->
-    <div id="auth-container" class="auth-container">
-        <div class="auth-box">
-            <div class="auth-logo">
-                <i class="fas fa-graduation-cap"></i>
-                <h1>EduHub</h1>
-                <p>Eğitim ve Sınav Platformu</p>
-            </div>
-
-            <div class="auth-tabs">
-                <button class="auth-tab active" onclick="showAuthTab('login')">Giriş Yap</button>
-                <button class="auth-tab" onclick="showAuthTab('register')">Kayıt Ol</button>
-            </div>
-
-            <!-- Login Form -->
-            <form id="login-form" class="auth-form">
-                <div class="input-group">
-                    <i class="fas fa-user"></i>
-                    <input type="text" id="login-username" placeholder="Kullanıcı Adı" required>
-                </div>
-                <div class="input-group">
-                    <i class="fas fa-lock"></i>
-                    <input type="password" id="login-password" placeholder="Şifre" required>
-                    <i class="fas fa-eye toggle-password" onclick="togglePassword('login-password')"></i>
-                </div>
-                <button type="submit" class="auth-btn">
-                    <i class="fas fa-sign-in-alt"></i> Giriş Yap
-                </button>
-                <p class="auth-link" onclick="showForgotPassword()">Şifremi Unuttum</p>
-            </form>
-
-            <!-- Register Form -->
-            <form id="register-form" class="auth-form hidden">
-                <div class="input-group">
-                    <i class="fas fa-user"></i>
-                    <input type="text" id="reg-username" placeholder="Kullanıcı Adı" required>
-                </div>
-                <div class="input-group">
-                    <i class="fas fa-envelope"></i>
-                    <input type="email" id="reg-email" placeholder="E-posta" required>
-                </div>
-                <div class="input-group">
-                    <i class="fas fa-lock"></i>
-                    <input type="password" id="reg-password" placeholder="Şifre (min 6 karakter)" required>
-                    <i class="fas fa-eye toggle-password" onclick="togglePassword('reg-password')"></i>
-                </div>
-                <div class="input-group">
-                    <i class="fas fa-calendar"></i>
-                    <input type="date" id="reg-birthdate" required>
-                </div>
-                <div class="input-group">
-                    <i class="fas fa-image"></i>
-                    <input type="file" id="reg-avatar" accept="image/*">
-                </div>
-                <button type="submit" class="auth-btn">
-                    <i class="fas fa-user-plus"></i> Kayıt Ol
-                </button>
-            </form>
-
-            <!-- Forgot Password -->
-            <form id="forgot-form" class="auth-form hidden">
-                <div class="input-group">
-                    <i class="fas fa-envelope"></i>
-                    <input type="email" id="forgot-email" placeholder="E-posta Adresiniz" required>
-                </div>
-                <button type="submit" class="auth-btn">
-                    <i class="fas fa-paper-plane"></i> Şifre Sıfırlama Linki Gönder
-                </button>
-                <p class="auth-link" onclick="showAuthTab('login')">Girişe Dön</p>
-            </form>
-        </div>
+    <!-- Login Form -->
+    <div id="login-form" class="auth-form active">
+      <h2>Giriş Yap</h2>
+      <div class="input-group">
+        <label>Kullanıcı Adı veya E-posta</label>
+        <input type="text" id="login-username" placeholder="kullaniciadi" autocomplete="username" />
+      </div>
+      <div class="input-group">
+        <label>Şifre</label>
+        <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" />
+        <button class="eye-btn" onclick="togglePassword('login-password')">👁</button>
+      </div>
+      <button class="btn-primary" onclick="handleLogin()">Giriş Yap</button>
+      <p class="auth-switch">Hesabın yok mu? <a href="#" onclick="switchAuth('register')">Kayıt Ol</a></p>
+      <p class="auth-switch"><a href="#" onclick="switchAuth('reset')">Şifremi Unuttum</a></p>
     </div>
 
-    <!-- Main App -->
-    <div id="main-app" class="main-app hidden">
-        <!-- Header -->
-        <header class="main-header">
-            <div class="header-left">
-                <button class="profile-btn" onclick="toggleProfile()">
-                    <img id="header-avatar" src="https://via.placeholder.com/40" alt="Avatar">
-                    <span id="header-username">Kullanıcı</span>
-                </button>
-            </div>
-
-            <div class="header-center">
-                <div class="yks-counter">
-                    <i class="fas fa-hourglass-half"></i>
-                    <span id="yks-timer">YKS'ye kalan: Hesaplanıyor...</span>
-                </div>
-            </div>
-
-            <div class="header-right">
-                <button class="menu-btn" onclick="toggleMenu()">
-                    <i class="fas fa-bars"></i>
-                </button>
-            </div>
-        </header>
-
-        <!-- Profile Panel -->
-        <div id="profile-panel" class="side-panel left-panel">
-            <div class="panel-header">
-                <img id="profile-avatar" src="https://via.placeholder.com/100" alt="Avatar">
-                <h3 id="profile-name">Kullanıcı Adı</h3>
-                <p id="profile-role">Öğrenci</p>
-                <p id="profile-zodiac">Burç: -</p>
-            </div>
-            <div class="panel-content">
-                <div class="profile-section">
-                    <h4><i class="fas fa-info-circle"></i> Hakkımda</h4>
-                    <p id="profile-bio">Henüz açıklama eklenmemiş.</p>
-                    <button class="edit-btn" onclick="editBio()">
-                        <i class="fas fa-edit"></i> Düzenle
-                    </button>
-                </div>
-
-                <div class="profile-section">
-                    <h4><i class="fas fa-trophy"></i> Başarılarım</h4>
-                    <div id="user-scores" class="scores-list">
-                        <p>Henüz puan yok</p>
-                    </div>
-                </div>
-
-                <div class="profile-actions">
-                    <button class="action-btn" onclick="showRanking()">
-                        <i class="fas fa-list-ol"></i> Sıralamayı Gör
-                    </button>
-                    <button class="action-btn" onclick="changeUsername()">
-                        <i class="fas fa-user-edit"></i> Kullanıcı Adı Değiştir
-                    </button>
-                    <button class="action-btn" onclick="resetPassword()">
-                        <i class="fas fa-key"></i> Şifre Sıfırla
-                    </button>
-                    <button class="action-btn danger" onclick="logout()">
-                        <i class="fas fa-sign-out-alt"></i> Çıkış Yap
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Menu Panel -->
-        <div id="menu-panel" class="side-panel right-panel">
-            <div class="panel-header">
-                <h3><i class="fas fa-th-large"></i> Menü</h3>
-            </div>
-            <div class="menu-grid">
-                <button class="menu-item" onclick="openTests()">
-                    <i class="fas fa-file-alt"></i>
-                    <span>Testler</span>
-                </button>
-                <button class="menu-item" onclick="openTestBooks()">
-                    <i class="fas fa-book"></i>
-                    <span>Test Kitapları</span>
-                </button>
-                <button class="menu-item" onclick="openExams()">
-                    <i class="fas fa-clipboard-list"></i>
-                    <span>Deneme Sınavları</span>
-                </button>
-                <button class="menu-item" onclick="showRanking()">
-                    <i class="fas fa-medal"></i>
-                    <span>Sıralama</span>
-                </button>
-                <button class="menu-item" onclick="openBestScores()">
-                    <i class="fas fa-star"></i>
-                    <span>En İyi Dereceler</span>
-                </button>
-                <button class="menu-item" onclick="openTeachers()">
-                    <i class="fas fa-chalkboard-teacher"></i>
-                    <span>Öğretmenler</span>
-                </button>
-                <button class="menu-item admin-only hidden" onclick="openAdminDM()">
-                    <i class="fas fa-envelope"></i>
-                    <span>Yönetici DM</span>
-                </button>
-                <button class="menu-item" onclick="openWritings()">
-                    <i class="fas fa-pen"></i>
-                    <span>Yazılılar</span>
-                </button>
-                <button class="menu-item" onclick="openScenarios()">
-                    <i class="fas fa-theater-masks"></i>
-                    <span>Senaryolar</span>
-                </button>
-                <button class="menu-item" onclick="openSchedule()">
-                    <i class="fas fa-calendar-alt"></i>
-                    <span>Ders Programı</span>
-                </button>
-                <button class="menu-item" onclick="openSchoolPhotos()">
-                    <i class="fas fa-images"></i>
-                    <span>Okul Fotoğrafları</span>
-                </button>
-                <button class="menu-item" onclick="openSchoolTeachers()">
-                    <i class="fas fa-users"></i>
-                    <span>Okul Öğretmenleri</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- Notifications Panel -->
-        <div id="notifications-panel" class="side-panel right-panel">
-            <div class="panel-header">
-                <h3><i class="fas fa-bell"></i> Bildirimler</h3>
-                <button class="close-btn" onclick="toggleNotifications()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div id="notifications-list" class="notifications-list">
-                <p class="empty-notif">Henüz bildirim yok</p>
-            </div>
-        </div>
-
-        <!-- Settings Panel -->
-        <div id="settings-panel" class="side-panel right-panel">
-            <div class="panel-header">
-                <h3><i class="fas fa-cog"></i> Ayarlar</h3>
-                <button class="close-btn" onclick="toggleSettings()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="settings-content">
-                <div class="setting-item">
-                    <span><i class="fas fa-moon"></i> Karanlık Mod</span>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="dark-mode-toggle" onchange="toggleDarkMode()">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                <div class="setting-item">
-                    <span><i class="fas fa-volume-up"></i> Ses Efektleri</span>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="sound-toggle" checked onchange="toggleSound()">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                <div class="setting-item">
-                    <span><i class="fas fa-music"></i> Arka Plan Müziği</span>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="music-toggle" onchange="toggleMusic()">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                <div class="setting-item">
-                    <span><i class="fas fa-ban"></i> Engellenen Kullanıcılar</span>
-                    <button class="small-btn" onclick="showBlockedUsers()">
-                        <i class="fas fa-list"></i> Listele
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Main Content Area -->
-        <main class="main-content">
-            <!-- Global Chat -->
-            <div class="chat-container">
-                <div class="chat-header">
-                    <h3><i class="fas fa-comments"></i> Global Sohbet</h3>
-                    <span id="online-count"><i class="fas fa-circle online"></i> 0 çevrimiçi</span>
-                </div>
-                <div id="chat-messages" class="chat-messages">
-                    <!-- Messages will be loaded here -->
-                </div>
-                <div class="chat-input-area">
-                    <button class="attach-btn" onclick="showAttachMenu()">
-                        <i class="fas fa-plus"></i>
-                    </button>
-                    <div id="attach-menu" class="attach-menu hidden">
-                        <button onclick="attachFile()">
-                            <i class="fas fa-file"></i> Dosya
-                        </button>
-                        <button onclick="attachImage()">
-                            <i class="fas fa-image"></i> Fotoğraf
-                        </button>
-                        <button onclick="toggleEmojiPicker()">
-                            <i class="fas fa-smile"></i> Emoji
-                        </button>
-                        <button onclick="attachGIF()">
-                            <i class="fas fa-gif"></i> GIF
-                        </button>
-                    </div>
-                    <div id="emoji-picker" class="emoji-picker hidden">
-                        <!-- Emojis will be populated by JS -->
-                    </div>
-                    <input type="text" id="message-input" placeholder="Mesajınızı yazın..." onkeypress="handleMessageKeypress(event)">
-                    <button class="send-btn" onclick="sendMessage()">
-                        <i class="fas fa-paper-plane"></i>
-                    </button>
-                </div>
-            </div>
-        </main>
-
-        <!-- Floating Action Buttons -->
-        <div class="fab-container">
-            <button class="fab main-fab" onclick="toggleFAB()">
-                <i class="fas fa-plus"></i>
-            </button>
-            <div class="fab-menu">
-                <button class="fab" onclick="toggleNotifications()" title="Bildirimler">
-                    <i class="fas fa-bell"></i>
-                    <span id="notif-badge" class="badge hidden">0</span>
-                </button>
-                <button class="fab" onclick="toggleSettings()" title="Ayarlar">
-                    <i class="fas fa-cog"></i>
-                </button>
-                <button class="fab admin-only hidden" onclick="openAdminPanel()" title="Yönetici Paneli">
-                    <i class="fas fa-shield-alt"></i>
-                </button>
-            </div>
-        </div>
+    <!-- Register Form -->
+    <div id="register-form" class="auth-form">
+      <h2>Kayıt Ol</h2>
+      <div class="input-group">
+        <label>Kullanıcı Adı</label>
+        <input type="text" id="reg-username" placeholder="kullaniciadi" />
+      </div>
+      <div class="input-group">
+        <label>E-posta</label>
+        <input type="email" id="reg-email" placeholder="ornek@mail.com" />
+      </div>
+      <div class="input-group">
+        <label>Doğum Tarihi</label>
+        <input type="date" id="reg-birthdate" />
+      </div>
+      <div class="input-group">
+        <label>Şifre</label>
+        <input type="password" id="reg-password" placeholder="En az 6 karakter" />
+      </div>
+      <div class="input-group">
+        <label>Şifre Tekrar</label>
+        <input type="password" id="reg-password2" placeholder="Şifreyi tekrarla" />
+      </div>
+      <button class="btn-primary" onclick="handleRegister()">Kayıt Ol</button>
+      <p class="auth-switch">Zaten hesabın var mı? <a href="#" onclick="switchAuth('login')">Giriş Yap</a></p>
     </div>
 
-    <!-- Modals -->
-    <!-- Test Solving Modal -->
-    <div id="test-modal" class="modal">
-        <div class="modal-content large">
-            <div class="modal-header">
-                <h2 id="test-title">Test Çöz</h2>
-                <button class="close-btn" onclick="closeModal('test-modal')">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div id="test-container" class="test-container">
-                    <!-- Test content will be loaded here -->
-                </div>
-                <div class="test-tools">
-                    <button class="tool-btn" onclick="selectTool('pen')" title="Kalem">
-                        <i class="fas fa-pen"></i>
-                    </button>
-                    <button class="tool-btn" onclick="selectTool('highlighter')" title="Fosforlu Kalem">
-                        <i class="fas fa-highlighter"></i>
-                    </button>
-                    <button class="tool-btn" onclick="selectTool('eraser')" title="Silgi">
-                        <i class="fas fa-eraser"></i>
-                    </button>
-                    <input type="color" id="pen-color" value="#000000" onchange="changePenColor()">
-                    <input type="range" id="pen-size" min="1" max="20" value="2" onchange="changePenSize()">
-                    <button class="tool-btn" onclick="clearCanvas()" title="Temizle">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                    <button class="tool-btn" onclick="toggleCalculator()" title="Hesap Makinesi">
-                        <i class="fas fa-calculator"></i>
-                    </button>
-                </div>
-                <canvas id="drawing-canvas" class="drawing-canvas"></canvas>
-            </div>
-            <div class="modal-footer">
-                <button class="btn secondary" onclick="closeModal('test-modal')">Kapat</button>
-                <button class="btn primary" onclick="submitTest()">Testi Bitir</button>
-            </div>
-        </div>
+    <!-- Reset Form -->
+    <div id="reset-form" class="auth-form">
+      <h2>Şifre Sıfırla</h2>
+      <div class="input-group">
+        <label>E-posta Adresin</label>
+        <input type="email" id="reset-email" placeholder="ornek@mail.com" />
+      </div>
+      <button class="btn-primary" onclick="handlePasswordReset()">Sıfırlama E-postası Gönder</button>
+      <p class="auth-switch"><a href="#" onclick="switchAuth('login')">← Geri Dön</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ MAIN APP ════════════════ -->
+<div id="app" class="app hidden">
+
+  <!-- ── TOP BAR ── -->
+  <header class="topbar">
+    <!-- Left: Profile -->
+    <button class="profile-btn" onclick="openPanel('profile-panel')" title="Profilim">
+      <div class="avatar" id="topbar-avatar">?</div>
+      <span id="topbar-username">Kullanıcı</span>
+    </button>
+
+    <!-- Center: YKS Countdown -->
+    <div class="yks-counter" onclick="openPanel('settings-panel')">
+      <span class="yks-label">YKS'ye</span>
+      <span id="yks-days" class="yks-days">---</span>
+      <span class="yks-label">gün</span>
     </div>
 
-    <!-- Ranking Modal -->
-    <div id="ranking-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2><i class="fas fa-trophy"></i> Genel Sıralama</h2>
-                <button class="close-btn" onclick="closeModal('ranking-modal')">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="search-box">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="ranking-search" placeholder="Kullanıcı ara..." onkeyup="searchRanking()">
-                </div>
-                <div class="stats-bar">
-                    <span>Toplam Kullanıcı: <strong id="total-users">0</strong></span>
-                </div>
-                <div id="ranking-list" class="ranking-list">
-                    <!-- Ranking items will be loaded here -->
-                </div>
-            </div>
-        </div>
+    <!-- Right: Notifications + Menu -->
+    <div class="topbar-right">
+      <button class="icon-btn notif-btn" onclick="toggleNotifPanel()" title="Bildirimler">
+        <span>🔔</span>
+        <span class="notif-badge hidden" id="notif-badge">0</span>
+      </button>
+      <button class="icon-btn" onclick="openPanel('settings-panel')" title="Ayarlar">⚙️</button>
+      <button class="hamburger-btn" onclick="toggleSidebar()" title="Menü">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ── NOTIFICATION PANEL ── -->
+  <div id="notif-panel" class="notif-panel hidden">
+    <div class="notif-header">
+      <h3>Bildirimler</h3>
+      <button onclick="toggleNotifPanel()">✕</button>
+    </div>
+    <div id="notif-list" class="notif-list">
+      <p class="empty-state">Henüz bildirim yok.</p>
+    </div>
+  </div>
+
+  <!-- ── SIDEBAR ── -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <span>📚</span> StudyHub
+    </div>
+    <ul class="sidebar-nav">
+      <li><a href="#" onclick="showPage('chat')" class="nav-item active" data-page="chat"><span>💬</span> Genel Sohbet</a></li>
+      <li><a href="#" onclick="showPage('tests')" class="nav-item" data-page="tests"><span>📝</span> Testler</a></li>
+      <li><a href="#" onclick="showPage('testbooks')" class="nav-item" data-page="testbooks"><span>📖</span> Test Kitapları</a></li>
+      <li><a href="#" onclick="showPage('exams')" class="nav-item" data-page="exams"><span>🎯</span> Deneme Sınavları</a></li>
+      <li><a href="#" onclick="showPage('rankings')" class="nav-item" data-page="rankings"><span>🏆</span> Sıralama</a></li>
+      <li><a href="#" onclick="showPage('teachers')" class="nav-item" data-page="teachers"><span>👨‍🏫</span> Öğretmenler</a></li>
+      <li><a href="#" onclick="showPage('writings')" class="nav-item" data-page="writings"><span>✍️</span> Yazılılar & Senaryolar</a></li>
+      <li><a href="#" onclick="showPage('schedule')" class="nav-item" data-page="schedule"><span>📅</span> Ders Programları</a></li>
+      <li><a href="#" onclick="showPage('photos')" class="nav-item" data-page="photos"><span>🖼️</span> Okul Fotoğrafları</a></li>
+      <li><a href="#" onclick="showPage('schoolteachers')" class="nav-item" data-page="schoolteachers"><span>🏫</span> Okul Öğretmenleri</a></li>
+      <li class="nav-divider"></li>
+      <li><a href="#" onclick="openDMModal(null, 'admin')" class="nav-item dm-admin"><span>📩</span> Yöneticiye Yaz</a></li>
+    </ul>
+
+    <!-- Admin Panel (only visible to admin) -->
+    <div id="admin-section" class="admin-section hidden">
+      <div class="admin-label">YÖNETİCİ PANELİ</div>
+      <ul class="sidebar-nav">
+        <li><a href="#" onclick="showPage('admin-upload')" class="nav-item" data-page="admin-upload"><span>⬆️</span> İçerik Yükle</a></li>
+        <li><a href="#" onclick="showPage('admin-users')" class="nav-item" data-page="admin-users"><span>👥</span> Kullanıcı Yönetimi</a></li>
+        <li><a href="#" onclick="openBroadcastModal()" class="nav-item"><span>📢</span> Duyuru Gönder</a></li>
+      </ul>
     </div>
 
-    <!-- Admin Panel Modal -->
-    <div id="admin-modal" class="modal">
-        <div class="modal-content large">
-            <div class="modal-header">
-                <h2><i class="fas fa-shield-alt"></i> Yönetici Paneli</h2>
-                <button class="close-btn" onclick="closeModal('admin-modal')">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="admin-tabs">
-                    <button class="admin-tab active" onclick="showAdminTab('upload')">
-                        <i class="fas fa-upload"></i> İçerik Yükle
-                    </button>
-                    <button class="admin-tab" onclick="showAdminTab('notifications')">
-                        <i class="fas fa-bell"></i> Bildirim Gönder
-                    </button>
-                    <button class="admin-tab" onclick="showAdminTab('users')">
-                        <i class="fas fa-users"></i> Kullanıcı Yönetimi
-                    </button>
-                    <button class="admin-tab" onclick="showAdminTab('data')">
-                        <i class="fas fa-database"></i> Veri Yönetimi
-                    </button>
-                </div>
+    <button class="sidebar-logout" onclick="handleLogout()">🚪 Çıkış Yap</button>
+  </nav>
+  <div class="sidebar-overlay hidden" id="sidebar-overlay" onclick="toggleSidebar()"></div>
 
-                <!-- Upload Section -->
-                <div id="admin-upload" class="admin-section">
-                    <div class="upload-types">
-                        <button class="upload-type-btn active" onclick="setUploadType('test')">Test</button>
-                        <button class="upload-type-btn" onclick="setUploadType('exam')">Deneme</button>
-                        <button class="upload-type-btn" onclick="setUploadType('book')">Test Kitabı</button>
-                    </div>
-                    <form id="upload-form" class="upload-form">
-                        <div class="input-group">
-                            <label>Başlık</label>
-                            <input type="text" id="upload-title" required>
-                        </div>
-                        <div class="input-group">
-                            <label>Açıklama</label>
-                            <textarea id="upload-desc"></textarea>
-                        </div>
-                        <div class="input-group">
-                            <label>Kategori</label>
-                            <select id="upload-category">
-                                <option value="tyt">TYT</option>
-                                <option value="ayt">AYT</option>
-                                <option value="ydt">YDT</option>
-                                <option value="other">Diğer</option>
-                            </select>
-                        </div>
-                        <div class="input-group">
-                            <label>Dosya Yükle (PDF, Word, Image)</label>
-                            <input type="file" id="upload-file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg">
-                        </div>
-                        <div id="questions-area" class="questions-area">
-                            <h4>Sorular</h4>
-                            <div id="questions-list"></div>
-                            <button type="button" class="btn secondary" onclick="addQuestion()">
-                                <i class="fas fa-plus"></i> Soru Ekle
-                            </button>
-                        </div>
-                        <button type="submit" class="btn primary">
-                            <i class="fas fa-upload"></i> Yükle
-                        </button>
-                    </form>
-                </div>
+  <!-- ── MAIN CONTENT ── -->
+  <main class="main-content" id="main-content">
 
-                <!-- Notifications Section -->
-                <div id="admin-notifications" class="admin-section hidden">
-                    <form id="notif-form">
-                        <div class="input-group">
-                            <label>Bildirim Türü</label>
-                            <select id="notif-type">
-                                <option value="all">Herkese</option>
-                                <option value="specific">Belirli Kullanıcı</option>
-                            </select>
-                        </div>
-                        <div id="specific-user-group" class="input-group hidden">
-                            <label>Kullanıcı Adı</label>
-                            <input type="text" id="notif-username">
-                        </div>
-                        <div class="input-group">
-                            <label>Başlık</label>
-                            <input type="text" id="notif-title" required>
-                        </div>
-                        <div class="input-group">
-                            <label>Mesaj</label>
-                            <textarea id="notif-message" required></textarea>
-                        </div>
-                        <button type="submit" class="btn primary">
-                            <i class="fas fa-paper-plane"></i> Gönder
-                        </button>
-                    </form>
-                </div>
-
-                <!-- User Management -->
-                <div id="admin-users" class="admin-section hidden">
-                    <div class="search-box">
-                        <i class="fas fa-search"></i>
-                        <input type="text" id="user-search" placeholder="Kullanıcı ara..." onkeyup="searchUsers()">
-                    </div>
-                    <div id="users-list" class="users-list"></div>
-                </div>
-
-                <!-- Data Management -->
-                <div id="admin-data" class="admin-section hidden">
-                    <div class="data-categories">
-                        <button class="data-cat-btn" onclick="manageData('writings')">
-                            <i class="fas fa-pen"></i> Yazılılar
-                        </button>
-                        <button class="data-cat-btn" onclick="manageData('scenarios')">
-                            <i class="fas fa-theater-masks"></i> Senaryolar
-                        </button>
-                        <button class="data-cat-btn" onclick="manageData('schedule')">
-                            <i class="fas fa-calendar"></i> Ders Programı
-                        </button>
-                        <button class="data-cat-btn" onclick="manageData('photos')">
-                            <i class="fas fa-images"></i> Okul Fotoğrafları
-                        </button>
-                        <button class="data-cat-btn" onclick="manageData('teachers')">
-                            <i class="fas fa-users"></i> Okul Öğretmenleri
-                        </button>
-                    </div>
-                    <div id="data-management-area"></div>
-                </div>
-            </div>
+    <!-- ===== CHAT PAGE ===== -->
+    <section id="page-chat" class="page active">
+      <div class="page-header">
+        <h2>💬 Genel Sohbet</h2>
+        <span class="online-count"><span class="dot-green"></span> <span id="online-count">0</span> çevrimiçi</span>
+      </div>
+      <div class="chat-container">
+        <div id="chat-messages" class="chat-messages">
+          <div class="chat-welcome">
+            <p>👋 Herkese açık sohbet alanı. Saygılı ol, birlikte öğren!</p>
+          </div>
         </div>
-    </div>
+        <div class="chat-input-area">
+          <div class="chat-toolbar">
+            <button class="tool-btn" onclick="triggerFileUpload()" title="Dosya Ekle">📎</button>
+            <button class="tool-btn" onclick="toggleEmojiPicker()" title="Emoji">😊</button>
+            <button class="tool-btn" onclick="triggerGifUpload()" title="GIF">GIF</button>
+          </div>
+          <div class="chat-input-row">
+            <div id="chat-input" class="chat-input" contenteditable="true" placeholder="Bir şeyler yaz..." onkeydown="handleChatKey(event)"></div>
+            <button class="send-btn" onclick="sendChatMessage()">➤</button>
+          </div>
+          <input type="file" id="file-input" style="display:none" onchange="handleFileAttach(event)" />
+          <div id="emoji-picker" class="emoji-picker hidden">
+            <div class="emoji-grid" id="emoji-grid"></div>
+          </div>
+          <div id="attach-preview" class="attach-preview hidden">
+            <span id="attach-name"></span>
+            <button onclick="clearAttach()">✕</button>
+          </div>
+        </div>
+      </div>
+    </section>
 
-    <!-- Calculator Modal -->
-    <div id="calculator-modal" class="modal small">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3><i class="fas fa-calculator"></i> Hesap Makinesi</h3>
-                <button class="close-btn" onclick="closeModal('calculator-modal')">
-                    <i class="fas fa-times"></i>
-                </button>
+    <!-- ===== TESTS PAGE ===== -->
+    <section id="page-tests" class="page">
+      <div class="page-header">
+        <h2>📝 Testler</h2>
+        <div class="page-tools">
+          <input type="text" class="search-input" placeholder="Test ara..." oninput="filterContent('tests', this.value)" />
+        </div>
+      </div>
+      <div id="tests-grid" class="content-grid">
+        <div class="empty-state">Henüz test eklenmemiş.</div>
+      </div>
+    </section>
+
+    <!-- ===== TEST SOLVER ===== -->
+    <section id="page-test-solver" class="page">
+      <div class="page-header">
+        <button class="back-btn" onclick="showPage('tests')">← Geri</button>
+        <h2 id="solver-title">Test Çözücü</h2>
+        <div class="solver-tools">
+          <button class="tool-btn" onclick="toggleDrawingMode()" title="Kalem">✏️ Kalem</button>
+          <button class="tool-btn" onclick="clearCanvas()" title="Sil">🗑️</button>
+          <button class="tool-btn" onclick="toggleCalculator()" title="Hesap Makinesi">🔢</button>
+          <button class="tool-btn" onclick="toggleFormulas()" title="Formüller">📐</button>
+          <button class="tool-btn" onclick="toggleTimer()" title="Zamanlayıcı">⏱️</button>
+        </div>
+      </div>
+      <div class="solver-layout">
+        <div class="solver-left">
+          <div id="test-questions" class="test-questions"></div>
+          <div class="solver-footer">
+            <div class="answer-summary" id="answer-summary"></div>
+            <button class="btn-primary" onclick="submitTest()">✅ Testi Bitir</button>
+          </div>
+        </div>
+        <div class="solver-right" id="solver-tools-panel">
+          <!-- Drawing Canvas -->
+          <div id="drawing-panel" class="tool-panel hidden">
+            <div class="panel-header">✏️ Çizim Tahtası</div>
+            <div class="canvas-tools">
+              <input type="color" id="pen-color" value="#f0c040" title="Renk" />
+              <input type="range" id="pen-size" min="1" max="20" value="3" title="Boyut" />
+              <button onclick="setDrawTool('pen')">✏️</button>
+              <button onclick="setDrawTool('eraser')">🧹</button>
             </div>
+            <canvas id="drawing-canvas" class="drawing-canvas"></canvas>
+          </div>
+          <!-- Calculator -->
+          <div id="calc-panel" class="tool-panel hidden">
+            <div class="panel-header">🔢 Hesap Makinesi</div>
             <div class="calculator">
-                <input type="text" id="calc-display" readonly>
-                <div class="calc-buttons">
-                    <button onclick="calcClear()">C</button>
-                    <button onclick="calcAppend('/')">/</button>
-                    <button onclick="calcAppend('*')">×</button>
-                    <button onclick="calcBackspace()">←</button>
-                    <button onclick="calcAppend('7')">7</button>
-                    <button onclick="calcAppend('8')">8</button>
-                    <button onclick="calcAppend('9')">9</button>
-                    <button onclick="calcAppend('-')">-</button>
-                    <button onclick="calcAppend('4')">4</button>
-                    <button onclick="calcAppend('5')">5</button>
-                    <button onclick="calcAppend('6')">6</button>
-                    <button onclick="calcAppend('+')">+</button>
-                    <button onclick="calcAppend('1')">1</button>
-                    <button onclick="calcAppend('2')">2</button>
-                    <button onclick="calcAppend('3')">3</button>
-                    <button onclick="calcCalculate()" class="equals">=</button>
-                    <button onclick="calcAppend('0')" class="zero">0</button>
-                    <button onclick="calcAppend('.')">.</button>
-                </div>
+              <input type="text" id="calc-display" class="calc-display" readonly />
+              <div class="calc-buttons" id="calc-buttons"></div>
             </div>
+          </div>
+          <!-- Formula Sheet -->
+          <div id="formula-panel" class="tool-panel hidden">
+            <div class="panel-header">📐 Formüller</div>
+            <div class="formula-tabs">
+              <button onclick="showFormulas('math')" class="ftab active">Matematik</button>
+              <button onclick="showFormulas('physics')" class="ftab">Fizik</button>
+              <button onclick="showFormulas('chemistry')" class="ftab">Kimya</button>
+            </div>
+            <div id="formula-content" class="formula-content"></div>
+          </div>
+          <!-- Timer -->
+          <div id="timer-panel" class="tool-panel hidden">
+            <div class="panel-header">⏱️ Zamanlayıcı</div>
+            <div class="timer-display" id="timer-display">00:00</div>
+            <div class="timer-controls">
+              <button onclick="startTimer()">▶</button>
+              <button onclick="pauseTimer()">⏸</button>
+              <button onclick="resetTimer()">↺</button>
+            </div>
+          </div>
         </div>
-    </div>
+      </div>
+    </section>
 
-    <!-- User Profile View Modal -->
-    <div id="user-profile-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Kullanıcı Profili</h2>
-                <button class="close-btn" onclick="closeModal('user-profile-modal')">
-                    <i class="fas="fas fa-times"></i>
-                </button>
-            </div>
-            <div id="view-profile-content" class="profile-view">
-                <!-- Profile content will be loaded here -->
-            </div>
+    <!-- ===== TEST BOOKS ===== -->
+    <section id="page-testbooks" class="page">
+      <div class="page-header">
+        <h2>📖 Test Kitapları</h2>
+        <input type="text" class="search-input" placeholder="Kitap ara..." oninput="filterContent('testbooks', this.value)" />
+      </div>
+      <div id="testbooks-grid" class="content-grid"></div>
+    </section>
+
+    <!-- ===== EXAMS ===== -->
+    <section id="page-exams" class="page">
+      <div class="page-header">
+        <h2>🎯 Deneme Sınavları</h2>
+        <input type="text" class="search-input" placeholder="Deneme ara..." oninput="filterContent('exams', this.value)" />
+      </div>
+      <div id="exams-grid" class="content-grid"></div>
+    </section>
+
+    <!-- ===== RANKINGS ===== -->
+    <section id="page-rankings" class="page">
+      <div class="page-header">
+        <h2>🏆 Sıralama</h2>
+        <input type="text" class="search-input" placeholder="Kullanıcı ara..." oninput="filterRankings(this.value)" />
+      </div>
+      <div class="rankings-meta">
+        <span id="total-users-count">Toplam: 0 kullanıcı</span>
+      </div>
+      <div class="rankings-table-wrap">
+        <table class="rankings-table">
+          <thead>
+            <tr><th>#</th><th>Kullanıcı</th><th>Puan</th><th>Doğru</th><th>Çözülen</th><th>Profil</th></tr>
+          </thead>
+          <tbody id="rankings-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===== TEACHERS ===== -->
+    <section id="page-teachers" class="page">
+      <div class="page-header"><h2>👨‍🏫 Öğretmenler</h2></div>
+      <div id="teachers-grid" class="teachers-grid"></div>
+    </section>
+
+    <!-- ===== WRITINGS ===== -->
+    <section id="page-writings" class="page">
+      <div class="page-header"><h2>✍️ Yazılılar & Senaryolar</h2></div>
+      <div id="writings-grid" class="content-grid"></div>
+    </section>
+
+    <!-- ===== SCHEDULE ===== -->
+    <section id="page-schedule" class="page">
+      <div class="page-header"><h2>📅 Ders Programları</h2></div>
+      <div id="schedule-grid" class="content-grid"></div>
+    </section>
+
+    <!-- ===== PHOTOS ===== -->
+    <section id="page-photos" class="page">
+      <div class="page-header"><h2>🖼️ Okul Fotoğrafları</h2></div>
+      <div id="photos-grid" class="photos-grid"></div>
+    </section>
+
+    <!-- ===== SCHOOL TEACHERS ===== -->
+    <section id="page-schoolteachers" class="page">
+      <div class="page-header"><h2>🏫 Okul Öğretmenleri</h2></div>
+      <div id="schoolteachers-grid" class="teachers-grid"></div>
+    </section>
+
+    <!-- ===== ADMIN UPLOAD ===== -->
+    <section id="page-admin-upload" class="page admin-only">
+      <div class="page-header"><h2>⬆️ İçerik Yükle</h2></div>
+      <div class="admin-upload-grid">
+        <div class="upload-card" onclick="openUploadModal('test')">
+          <span>📝</span><p>Test Ekle</p>
         </div>
+        <div class="upload-card" onclick="openUploadModal('testbook')">
+          <span>📖</span><p>Test Kitabı Ekle</p>
+        </div>
+        <div class="upload-card" onclick="openUploadModal('exam')">
+          <span>🎯</span><p>Deneme Sınavı Ekle</p>
+        </div>
+        <div class="upload-card" onclick="openUploadModal('writing')">
+          <span>✍️</span><p>Yazılı / Senaryo Ekle</p>
+        </div>
+        <div class="upload-card" onclick="openUploadModal('schedule')">
+          <span>📅</span><p>Ders Programı Ekle</p>
+        </div>
+        <div class="upload-card" onclick="openUploadModal('photo')">
+          <span>🖼️</span><p>Fotoğraf Ekle</p>
+        </div>
+        <div class="upload-card" onclick="openUploadModal('schoolteacher')">
+          <span>🏫</span><p>Okul Öğretmeni Ekle</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== ADMIN USERS ===== -->
+    <section id="page-admin-users" class="page admin-only">
+      <div class="page-header"><h2>👥 Kullanıcı Yönetimi</h2></div>
+      <div class="admin-user-controls">
+        <input type="text" class="search-input" placeholder="Kullanıcı ara..." oninput="filterAdminUsers(this.value)" />
+      </div>
+      <div class="admin-users-table-wrap">
+        <table class="admin-users-table">
+          <thead>
+            <tr><th>Kullanıcı</th><th>E-posta</th><th>Rol</th><th>Katılım</th><th>İşlemler</th></tr>
+          </thead>
+          <tbody id="admin-users-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </main><!-- /.main-content -->
+
+</div><!-- /#app -->
+
+<!-- ════════ MODALS ════════ -->
+
+<!-- Profile Panel (Slide) -->
+<div id="profile-panel" class="side-panel hidden">
+  <div class="panel-backdrop" onclick="closePanel('profile-panel')"></div>
+  <div class="panel-content">
+    <button class="panel-close" onclick="closePanel('profile-panel')">✕</button>
+    <div class="profile-header-area">
+      <div class="profile-avatar-wrap">
+        <div class="profile-avatar-lg" id="panel-avatar">?</div>
+        <button class="change-avatar-btn" onclick="triggerAvatarUpload()" title="Fotoğraf Değiştir">📷</button>
+        <input type="file" id="avatar-input" accept="image/*" style="display:none" onchange="handleAvatarUpload(event)" />
+      </div>
+      <h3 id="panel-username">Kullanıcı</h3>
+      <p id="panel-role-badge" class="role-badge">Öğrenci</p>
+      <p id="panel-zodiac" class="zodiac-sign"></p>
     </div>
+    <div class="profile-stats">
+      <div class="stat"><span id="p-score">0</span><small>Puan</small></div>
+      <div class="stat"><span id="p-rank">#—</span><small>Sıralama</small></div>
+      <div class="stat"><span id="p-solved">0</span><small>Çözülen</small></div>
+    </div>
+    <div class="profile-bio-section">
+      <label>Hakkımda</label>
+      <textarea id="panel-bio" placeholder="Kendini tanıt..." maxlength="280" oninput="saveBioDraft()"></textarea>
+      <button class="btn-sm" onclick="saveBio()">Kaydet</button>
+    </div>
+    <div class="profile-settings-section">
+      <h4>Hesap Ayarları</h4>
+      <div class="input-group">
+        <label>Kullanıcı Adını Değiştir <small>(haftada 1 kez)</small></label>
+        <input type="text" id="new-username-input" placeholder="Yeni kullanıcı adı" />
+        <button class="btn-sm" onclick="changeUsername()">Değiştir</button>
+      </div>
+      <button class="btn-outline" onclick="openPanel('profile-panel'); switchAuth('reset'); document.getElementById('auth-overlay').classList.add('active')">Şifre Sıfırla</button>
+    </div>
+    <button class="btn-danger-sm" onclick="handleLogout()">🚪 Çıkış Yap</button>
+  </div>
+</div>
 
-    <!-- Toast Notifications -->
-    <div id="toast-container" class="toast-container"></div>
+<!-- Other User Profile Modal -->
+<div id="user-profile-modal" class="modal hidden">
+  <div class="modal-backdrop" onclick="closeModal('user-profile-modal')"></div>
+  <div class="modal-card profile-modal-card">
+    <button class="modal-close" onclick="closeModal('user-profile-modal')">✕</button>
+    <div class="profile-avatar-lg" id="modal-user-avatar">?</div>
+    <h3 id="modal-user-username"></h3>
+    <p id="modal-user-role" class="role-badge"></p>
+    <p id="modal-user-zodiac" class="zodiac-sign"></p>
+    <div class="profile-stats">
+      <div class="stat"><span id="modal-user-score">0</span><small>Puan</small></div>
+      <div class="stat"><span id="modal-user-rank">#—</span><small>Sıralama</small></div>
+      <div class="stat"><span id="modal-user-solved">0</span><small>Çözülen</small></div>
+    </div>
+    <p id="modal-user-bio" class="modal-bio"></p>
+    <div class="modal-user-actions">
+      <button class="btn-primary" onclick="openDMFromModal()">💬 Mesaj Gönder</button>
+      <button class="btn-danger-sm" onclick="blockUserFromModal()">🚫 Engelle</button>
+    </div>
+  </div>
+</div>
 
-    <script src="app.js"></script>
+<!-- Settings Panel -->
+<div id="settings-panel" class="side-panel hidden">
+  <div class="panel-backdrop" onclick="closePanel('settings-panel')"></div>
+  <div class="panel-content">
+    <button class="panel-close" onclick="closePanel('settings-panel')">✕</button>
+    <h3>⚙️ Ayarlar</h3>
+    <div class="settings-section">
+      <h4>Görünüm</h4>
+      <label class="toggle-row">
+        <span>Karanlık Mod</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="dark-mode-toggle" onchange="toggleDarkMode(this)" checked />
+          <span class="toggle-slider"></span>
+        </label>
+      </label>
+      <div class="setting-row">
+        <label>Tema Rengi</label>
+        <div class="color-swatches" id="color-swatches"></div>
+      </div>
+      <div class="setting-row">
+        <label>Yazı Boyutu</label>
+        <input type="range" min="12" max="20" value="14" oninput="setFontSize(this.value)" />
+      </div>
+    </div>
+    <div class="settings-section">
+      <h4>Ses & Müzik</h4>
+      <label class="toggle-row">
+        <span>Bildirim Sesi</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="notif-sound-toggle" onchange="toggleSetting('notifSound', this)" checked />
+          <span class="toggle-slider"></span>
+        </label>
+      </label>
+      <label class="toggle-row">
+        <span>Mesaj Sesi</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="msg-sound-toggle" onchange="toggleSetting('msgSound', this)" checked />
+          <span class="toggle-slider"></span>
+        </label>
+      </label>
+      <label class="toggle-row">
+        <span>Arka Plan Müziği</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="bg-music-toggle" onchange="toggleBgMusic(this)" />
+          <span class="toggle-slider"></span>
+        </label>
+      </label>
+      <div class="setting-row" id="music-select-row" style="display:none">
+        <label>Müzik Türü</label>
+        <select onchange="changeBgMusic(this.value)">
+          <option value="lofi">🎵 Lo-fi</option>
+          <option value="classical">🎻 Klasik</option>
+          <option value="ambient">🌊 Ambient</option>
+        </select>
+      </div>
+    </div>
+    <div class="settings-section">
+      <h4>Engellenenler</h4>
+      <div id="blocked-list" class="blocked-list"></div>
+    </div>
+    <div class="settings-section">
+      <h4>YKS Tarihi</h4>
+      <input type="date" id="yks-date-input" onchange="setYKSDate(this.value)" />
+      <small>Sayaç için YKS tarihini ayarla</small>
+    </div>
+  </div>
+</div>
+
+<!-- DM Modal -->
+<div id="dm-modal" class="modal hidden">
+  <div class="modal-backdrop" onclick="closeModal('dm-modal')"></div>
+  <div class="modal-card dm-card">
+    <button class="modal-close" onclick="closeModal('dm-modal')">✕</button>
+    <h3 id="dm-modal-title">Mesaj Gönder</h3>
+    <div id="dm-messages" class="dm-messages"></div>
+    <div class="dm-input-row">
+      <input type="text" id="dm-input" placeholder="Mesaj yaz..." onkeydown="handleDMKey(event)" />
+      <button class="send-btn" onclick="sendDM()">➤</button>
+    </div>
+  </div>
+</div>
+
+<!-- Broadcast Modal (Admin) -->
+<div id="broadcast-modal" class="modal hidden">
+  <div class="modal-backdrop" onclick="closeModal('broadcast-modal')"></div>
+  <div class="modal-card">
+    <button class="modal-close" onclick="closeModal('broadcast-modal')">✕</button>
+    <h3>📢 Duyuru Gönder</h3>
+    <div class="input-group">
+      <label>Hedef</label>
+      <select id="broadcast-target">
+        <option value="all">Herkese</option>
+        <option value="dm">Belirli Kullanıcıya</option>
+      </select>
+    </div>
+    <div id="broadcast-user-select" class="input-group hidden">
+      <label>Kullanıcı Adı</label>
+      <input type="text" id="broadcast-username" placeholder="kullaniciadi" />
+    </div>
+    <div class="input-group">
+      <label>Mesaj</label>
+      <textarea id="broadcast-message" placeholder="Duyuru mesajını yaz..." rows="4"></textarea>
+    </div>
+    <button class="btn-primary" onclick="sendBroadcast()">Gönder</button>
+  </div>
+</div>
+
+<!-- Upload Modal (Admin/Teacher) -->
+<div id="upload-modal" class="modal hidden">
+  <div class="modal-backdrop" onclick="closeModal('upload-modal')"></div>
+  <div class="modal-card">
+    <button class="modal-close" onclick="closeModal('upload-modal')">✕</button>
+    <h3 id="upload-modal-title">İçerik Yükle</h3>
+    <div class="input-group">
+      <label>Başlık</label>
+      <input type="text" id="upload-title" placeholder="İçerik başlığı" />
+    </div>
+    <div class="input-group">
+      <label>Ders / Kategori</label>
+      <select id="upload-subject">
+        <option>Matematik</option>
+        <option>Türkçe</option>
+        <option>Fizik</option>
+        <option>Kimya</option>
+        <option>Biyoloji</option>
+        <option>Tarih</option>
+        <option>Coğrafya</option>
+        <option>Edebiyat</option>
+        <option>İngilizce</option>
+        <option>Diğer</option>
+      </select>
+    </div>
+    <div class="input-group">
+      <label>Açıklama</label>
+      <textarea id="upload-desc" rows="3" placeholder="Kısa açıklama"></textarea>
+    </div>
+    <div class="input-group">
+      <label>Dosya (PDF / Görsel)</label>
+      <input type="file" id="upload-file" accept=".pdf,.jpg,.png,.jpeg" />
+    </div>
+    <div id="upload-questions-section" class="hidden">
+      <label>Sorular (JSON formatı)</label>
+      <textarea id="upload-questions" rows="6" placeholder='[{"q":"Soru metni","options":["A","B","C","D"],"answer":0}]'></textarea>
+    </div>
+    <button class="btn-primary" onclick="submitUpload()">⬆️ Yükle</button>
+  </div>
+</div>
+
+<!-- Test Result Modal -->
+<div id="result-modal" class="modal hidden">
+  <div class="modal-backdrop"></div>
+  <div class="modal-card result-card">
+    <h3>📊 Sonuçların</h3>
+    <div id="result-content" class="result-content"></div>
+    <button class="btn-primary" onclick="closeModal('result-modal'); showPage('tests')">Testlere Dön</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast-container" class="toast-container"></div>
+
+<script src="app.js" type="module"></script>
 </body>
 </html>

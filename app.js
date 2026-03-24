@@ -3,13 +3,17 @@
 //  Firebase bağlantısı boş bırakıldı. Kendi config'ini ekle.
 // ═══════════════════════════════════════════════════════════════════
 
-// ─── FIREBASE IMPORTS — KENDİ PAKETLERINI BURAYA EKLE ───────────
-// import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-//          sendPasswordResetEmail, onAuthStateChanged, signOut } from "firebase/auth";
-// import { getFirestore, doc, setDoc, getDoc, updateDoc, collection,
-//          query, orderBy, onSnapshot, addDoc, serverTimestamp, getDocs } from "firebase/firestore";
-// import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyD36TC6n4kR6wBoiownR7L2iCQyBrAwq1k",
+  authDomain: "a-79192.firebaseapp.com",
+  databaseURL: "https://a-79192-default-rtdb.firebaseio.com",
+  projectId: "a-79192",
+  storageBucket: "a-79192.firebasestorage.app",
+  messagingSenderId: "29833951990",
+  appId: "1:29833951990:web:36cda4e2ce8fb9ef4b4ad7",
+  measurementId: "G-7J1189L9M6"
+};
 // ─── APP STATE ──────────────────────────────────────────────────
 const State = {
   user: null,         // { uid, username, email, role, avatar, bio, birthdate, score, solved, usernameChangedAt, blocked:[] }

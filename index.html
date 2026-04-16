@@ -3,618 +3,320 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>StudyHub — YKS Hazırlık Platformu</title>
+  <title>ArcadeVault — Birikim Oyun Merkezi</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet" />
-  <!-- Firebase SDK — BURAYA KENDİ FIREBASE CONFIG'İNİ EKLE -->
-  <script type="module">
-    // import { initializeApp } from "https://www.gstatic.com/firebasejs/10.x.x/firebase-app.js";
-    // import { getAuth } from "...";
-    // import { getFirestore } from "...";
-    // import { getStorage } from "...";
-    // const firebaseConfig = { apiKey: "...", authDomain: "...", ... };
-    // window._firebaseApp = initializeApp(firebaseConfig);
-  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet" />
 </head>
 <body>
 
-<!-- ════════════════ AUTH OVERLAY ════════════════ -->
-<div id="auth-overlay" class="auth-overlay active">
-  <div class="auth-bg-pattern"></div>
-  <div class="auth-card" id="auth-card">
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!--  KAYIT / GİRİŞ EKRANI                                          -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<div id="screen-auth" class="screen active">
+  <div class="auth-bg">
+    <div class="auth-grid"></div>
+    <div class="auth-stars" id="authStars"></div>
+  </div>
+  <div class="auth-card">
     <div class="auth-logo">
-      <span class="logo-icon">📚</span>
-      <h1>StudyHub</h1>
-      <p>YKS Hazırlık Platformu</p>
+      <span class="logo-icon">🎮</span>
+      <h1 class="logo-text">ArcadeVault</h1>
+      <p class="logo-sub">Oyna · Kazan · Büyü</p>
     </div>
-
-    <!-- Login Form -->
-    <div id="login-form" class="auth-form active">
-      <h2>Giriş Yap</h2>
-      <div class="input-group">
-        <label>Kullanıcı Adı veya E-posta</label>
-        <input type="text" id="login-username" placeholder="kullaniciadi" autocomplete="username" />
-      </div>
-      <div class="input-group">
-        <label>Şifre</label>
-        <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" />
-        <button class="eye-btn" onclick="togglePassword('login-password')">👁</button>
-      </div>
-      <button class="btn-primary" onclick="handleLogin()">Giriş Yap</button>
-      <p class="auth-switch">Hesabın yok mu? <a href="#" onclick="switchAuth('register')">Kayıt Ol</a></p>
-      <p class="auth-switch"><a href="#" onclick="switchAuth('reset')">Şifremi Unuttum</a></p>
+    <div class="auth-tabs">
+      <button class="auth-tab active" data-tab="register">Kayıt Ol</button>
+      <button class="auth-tab" data-tab="login">Giriş Yap</button>
     </div>
-
-    <!-- Register Form -->
-    <div id="register-form" class="auth-form">
-      <h2>Kayıt Ol</h2>
+    <!-- Register -->
+    <div class="auth-form active" id="form-register">
       <div class="input-group">
-        <label>Kullanıcı Adı</label>
-        <input type="text" id="reg-username" placeholder="kullaniciadi" />
+        <span class="input-icon">✉️</span>
+        <input type="email" id="reg-email" placeholder="E-posta adresin" autocomplete="off" />
       </div>
       <div class="input-group">
-        <label>E-posta</label>
-        <input type="email" id="reg-email" placeholder="ornek@mail.com" />
+        <span class="input-icon">👤</span>
+        <input type="text" id="reg-username" placeholder="Kullanıcı adın" autocomplete="off" />
       </div>
       <div class="input-group">
-        <label>Doğum Tarihi</label>
-        <input type="date" id="reg-birthdate" />
+        <span class="input-icon">🔒</span>
+        <input type="password" id="reg-password" placeholder="Şifre" />
       </div>
-      <div class="input-group">
-        <label>Şifre</label>
-        <input type="password" id="reg-password" placeholder="En az 6 karakter" />
-      </div>
-      <div class="input-group">
-        <label>Şifre Tekrar</label>
-        <input type="password" id="reg-password2" placeholder="Şifreyi tekrarla" />
-      </div>
-      <button class="btn-primary" onclick="handleRegister()">Kayıt Ol</button>
-      <p class="auth-switch">Zaten hesabın var mı? <a href="#" onclick="switchAuth('login')">Giriş Yap</a></p>
+      <button class="btn-primary" onclick="register()">Maceraya Başla →</button>
     </div>
-
-    <!-- Reset Form -->
-    <div id="reset-form" class="auth-form">
-      <h2>Şifre Sıfırla</h2>
+    <!-- Login -->
+    <div class="auth-form" id="form-login">
       <div class="input-group">
-        <label>E-posta Adresin</label>
-        <input type="email" id="reset-email" placeholder="ornek@mail.com" />
+        <span class="input-icon">👤</span>
+        <input type="text" id="login-username" placeholder="Kullanıcı adın" autocomplete="off" />
       </div>
-      <button class="btn-primary" onclick="handlePasswordReset()">Sıfırlama E-postası Gönder</button>
-      <p class="auth-switch"><a href="#" onclick="switchAuth('login')">← Geri Dön</a></p>
+      <div class="input-group">
+        <span class="input-icon">🔒</span>
+        <input type="password" id="login-password" placeholder="Şifre" />
+      </div>
+      <button class="btn-primary" onclick="login()">Giriş Yap →</button>
     </div>
+    <p class="auth-hint" id="auth-msg"></p>
   </div>
 </div>
 
-<!-- ════════════════ MAIN APP ════════════════ -->
-<div id="app" class="app hidden">
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!--  ANA MENÜ                                                       -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<div id="screen-menu" class="screen">
 
-  <!-- ── TOP BAR ── -->
+  <!-- TOP BAR -->
   <header class="topbar">
-    <!-- Left: Profile -->
-    <button class="profile-btn" onclick="openPanel('profile-panel')" title="Profilim">
-      <div class="avatar" id="topbar-avatar">?</div>
-      <span id="topbar-username">Kullanıcı</span>
+    <button class="topbar-btn" id="btn-profile" onclick="openProfile()">
+      <div class="avatar-mini" id="avatarMini">?</div>
+      <span id="topbar-username">Oyuncu</span>
     </button>
-
-    <!-- Center: YKS Countdown -->
-    <div class="yks-counter" onclick="openPanel('settings-panel')">
-      <span class="yks-label">YKS'ye</span>
-      <span id="yks-days" class="yks-days">---</span>
-      <span class="yks-label">gün</span>
+    <div class="coin-display">
+      <span class="coin-icon">🪙</span>
+      <span class="coin-amount" id="coinDisplay">0</span>
+      <span class="coin-label">PUAN</span>
     </div>
-
-    <!-- Right: Notifications + Menu -->
-    <div class="topbar-right">
-      <button class="icon-btn notif-btn" onclick="toggleNotifPanel()" title="Bildirimler">
-        <span>🔔</span>
-        <span class="notif-badge hidden" id="notif-badge">0</span>
-      </button>
-      <button class="icon-btn" onclick="openPanel('settings-panel')" title="Ayarlar">⚙️</button>
-      <button class="hamburger-btn" onclick="toggleSidebar()" title="Menü">
-        <span></span><span></span><span></span>
-      </button>
-    </div>
+    <button class="topbar-btn" onclick="openSettings()">⚙️ Ayarlar</button>
   </header>
 
-  <!-- ── NOTIFICATION PANEL ── -->
-  <div id="notif-panel" class="notif-panel hidden">
-    <div class="notif-header">
-      <h3>Bildirimler</h3>
-      <button onclick="toggleNotifPanel()">✕</button>
+  <!-- KARAKTER SAHNESİ -->
+  <section class="hero-scene">
+    <div class="scene-bg">
+      <div class="scene-clouds">
+        <div class="cloud c1"></div>
+        <div class="cloud c2"></div>
+        <div class="cloud c3"></div>
+      </div>
+      <div class="scene-floor"></div>
+      <div class="scene-stars" id="menuStars"></div>
     </div>
-    <div id="notif-list" class="notif-list">
-      <p class="empty-state">Henüz bildirim yok.</p>
-    </div>
-  </div>
-
-  <!-- ── SIDEBAR ── -->
-  <nav class="sidebar" id="sidebar">
-    <div class="sidebar-logo">
-      <span>📚</span> StudyHub
-    </div>
-    <ul class="sidebar-nav">
-      <li><a href="#" onclick="showPage('chat')" class="nav-item active" data-page="chat"><span>💬</span> Genel Sohbet</a></li>
-      <li><a href="#" onclick="showPage('tests')" class="nav-item" data-page="tests"><span>📝</span> Testler</a></li>
-      <li><a href="#" onclick="showPage('testbooks')" class="nav-item" data-page="testbooks"><span>📖</span> Test Kitapları</a></li>
-      <li><a href="#" onclick="showPage('exams')" class="nav-item" data-page="exams"><span>🎯</span> Deneme Sınavları</a></li>
-      <li><a href="#" onclick="showPage('rankings')" class="nav-item" data-page="rankings"><span>🏆</span> Sıralama</a></li>
-      <li><a href="#" onclick="showPage('teachers')" class="nav-item" data-page="teachers"><span>👨‍🏫</span> Öğretmenler</a></li>
-      <li><a href="#" onclick="showPage('writings')" class="nav-item" data-page="writings"><span>✍️</span> Yazılılar & Senaryolar</a></li>
-      <li><a href="#" onclick="showPage('schedule')" class="nav-item" data-page="schedule"><span>📅</span> Ders Programları</a></li>
-      <li><a href="#" onclick="showPage('photos')" class="nav-item" data-page="photos"><span>🖼️</span> Okul Fotoğrafları</a></li>
-      <li><a href="#" onclick="showPage('schoolteachers')" class="nav-item" data-page="schoolteachers"><span>🏫</span> Okul Öğretmenleri</a></li>
-      <li class="nav-divider"></li>
-      <li><a href="#" onclick="openDMModal(null, 'admin')" class="nav-item dm-admin"><span>📩</span> Yöneticiye Yaz</a></li>
-    </ul>
-
-    <!-- Admin Panel (only visible to admin) -->
-    <div id="admin-section" class="admin-section hidden">
-      <div class="admin-label">YÖNETİCİ PANELİ</div>
-      <ul class="sidebar-nav">
-        <li><a href="#" onclick="showPage('admin-upload')" class="nav-item" data-page="admin-upload"><span>⬆️</span> İçerik Yükle</a></li>
-        <li><a href="#" onclick="showPage('admin-users')" class="nav-item" data-page="admin-users"><span>👥</span> Kullanıcı Yönetimi</a></li>
-        <li><a href="#" onclick="openBroadcastModal()" class="nav-item"><span>📢</span> Duyuru Gönder</a></li>
-      </ul>
-    </div>
-
-    <button class="sidebar-logout" onclick="handleLogout()">🚪 Çıkış Yap</button>
-  </nav>
-  <div class="sidebar-overlay hidden" id="sidebar-overlay" onclick="toggleSidebar()"></div>
-
-  <!-- ── MAIN CONTENT ── -->
-  <main class="main-content" id="main-content">
-
-    <!-- ===== CHAT PAGE ===== -->
-    <section id="page-chat" class="page active">
-      <div class="page-header">
-        <h2>💬 Genel Sohbet</h2>
-        <span class="online-count"><span class="dot-green"></span> <span id="online-count">0</span> çevrimiçi</span>
-      </div>
-      <div class="chat-container">
-        <div id="chat-messages" class="chat-messages">
-          <div class="chat-welcome">
-            <p>👋 Herkese açık sohbet alanı. Saygılı ol, birlikte öğren!</p>
+    <div class="character-wrapper">
+      <div class="character-shadow"></div>
+      <div class="character" id="mainChar">
+        <div class="char-body">
+          <div class="char-head">
+            <div class="char-eye left"></div>
+            <div class="char-eye right"></div>
+            <div class="char-mouth"></div>
+            <div class="char-antenna"><div class="char-antenna-tip"></div></div>
           </div>
-        </div>
-        <div class="chat-input-area">
-          <div class="chat-toolbar">
-            <button class="tool-btn" onclick="triggerFileUpload()" title="Dosya Ekle">📎</button>
-            <button class="tool-btn" onclick="toggleEmojiPicker()" title="Emoji">😊</button>
-            <button class="tool-btn" onclick="triggerGifUpload()" title="GIF">GIF</button>
-          </div>
-          <div class="chat-input-row">
-            <div id="chat-input" class="chat-input" contenteditable="true" placeholder="Bir şeyler yaz..." onkeydown="handleChatKey(event)"></div>
-            <button class="send-btn" onclick="sendChatMessage()">➤</button>
-          </div>
-          <input type="file" id="file-input" style="display:none" onchange="handleFileAttach(event)" />
-          <div id="emoji-picker" class="emoji-picker hidden">
-            <div class="emoji-grid" id="emoji-grid"></div>
-          </div>
-          <div id="attach-preview" class="attach-preview hidden">
-            <span id="attach-name"></span>
-            <button onclick="clearAttach()">✕</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ===== TESTS PAGE ===== -->
-    <section id="page-tests" class="page">
-      <div class="page-header">
-        <h2>📝 Testler</h2>
-        <div class="page-tools">
-          <input type="text" class="search-input" placeholder="Test ara..." oninput="filterContent('tests', this.value)" />
-        </div>
-      </div>
-      <div id="tests-grid" class="content-grid">
-        <div class="empty-state">Henüz test eklenmemiş.</div>
-      </div>
-    </section>
-
-    <!-- ===== TEST SOLVER ===== -->
-    <section id="page-test-solver" class="page">
-      <div class="page-header">
-        <button class="back-btn" onclick="showPage('tests')">← Geri</button>
-        <h2 id="solver-title">Test Çözücü</h2>
-        <div class="solver-tools">
-          <button class="tool-btn" onclick="toggleDrawingMode()" title="Kalem">✏️ Kalem</button>
-          <button class="tool-btn" onclick="clearCanvas()" title="Sil">🗑️</button>
-          <button class="tool-btn" onclick="toggleCalculator()" title="Hesap Makinesi">🔢</button>
-          <button class="tool-btn" onclick="toggleFormulas()" title="Formüller">📐</button>
-          <button class="tool-btn" onclick="toggleTimer()" title="Zamanlayıcı">⏱️</button>
-        </div>
-      </div>
-      <div class="solver-layout">
-        <div class="solver-left">
-          <div id="test-questions" class="test-questions"></div>
-          <div class="solver-footer">
-            <div class="answer-summary" id="answer-summary"></div>
-            <button class="btn-primary" onclick="submitTest()">✅ Testi Bitir</button>
-          </div>
-        </div>
-        <div class="solver-right" id="solver-tools-panel">
-          <!-- Drawing Canvas -->
-          <div id="drawing-panel" class="tool-panel hidden">
-            <div class="panel-header">✏️ Çizim Tahtası</div>
-            <div class="canvas-tools">
-              <input type="color" id="pen-color" value="#f0c040" title="Renk" />
-              <input type="range" id="pen-size" min="1" max="20" value="3" title="Boyut" />
-              <button onclick="setDrawTool('pen')">✏️</button>
-              <button onclick="setDrawTool('eraser')">🧹</button>
-            </div>
-            <canvas id="drawing-canvas" class="drawing-canvas"></canvas>
-          </div>
-          <!-- Calculator -->
-          <div id="calc-panel" class="tool-panel hidden">
-            <div class="panel-header">🔢 Hesap Makinesi</div>
-            <div class="calculator">
-              <input type="text" id="calc-display" class="calc-display" readonly />
-              <div class="calc-buttons" id="calc-buttons"></div>
+          <div class="char-torso">
+            <div class="char-screen">
+              <span class="char-screen-text" id="charScreenText">HI!</span>
             </div>
           </div>
-          <!-- Formula Sheet -->
-          <div id="formula-panel" class="tool-panel hidden">
-            <div class="panel-header">📐 Formüller</div>
-            <div class="formula-tabs">
-              <button onclick="showFormulas('math')" class="ftab active">Matematik</button>
-              <button onclick="showFormulas('physics')" class="ftab">Fizik</button>
-              <button onclick="showFormulas('chemistry')" class="ftab">Kimya</button>
-            </div>
-            <div id="formula-content" class="formula-content"></div>
+          <div class="char-legs">
+            <div class="char-leg left"></div>
+            <div class="char-leg right"></div>
           </div>
-          <!-- Timer -->
-          <div id="timer-panel" class="tool-panel hidden">
-            <div class="panel-header">⏱️ Zamanlayıcı</div>
-            <div class="timer-display" id="timer-display">00:00</div>
-            <div class="timer-controls">
-              <button onclick="startTimer()">▶</button>
-              <button onclick="pauseTimer()">⏸</button>
-              <button onclick="resetTimer()">↺</button>
-            </div>
+          <div class="char-arms">
+            <div class="char-arm left"></div>
+            <div class="char-arm right"></div>
           </div>
         </div>
+        <div class="coin-orbit" id="coinOrbit"></div>
       </div>
-    </section>
-
-    <!-- ===== TEST BOOKS ===== -->
-    <section id="page-testbooks" class="page">
-      <div class="page-header">
-        <h2>📖 Test Kitapları</h2>
-        <input type="text" class="search-input" placeholder="Kitap ara..." oninput="filterContent('testbooks', this.value)" />
+      <div class="char-speech" id="charSpeech">
+        <p id="charSpeechText">Bugün ne oynamak istersin? 🎮</p>
       </div>
-      <div id="testbooks-grid" class="content-grid"></div>
-    </section>
-
-    <!-- ===== EXAMS ===== -->
-    <section id="page-exams" class="page">
-      <div class="page-header">
-        <h2>🎯 Deneme Sınavları</h2>
-        <input type="text" class="search-input" placeholder="Deneme ara..." oninput="filterContent('exams', this.value)" />
-      </div>
-      <div id="exams-grid" class="content-grid"></div>
-    </section>
-
-    <!-- ===== RANKINGS ===== -->
-    <section id="page-rankings" class="page">
-      <div class="page-header">
-        <h2>🏆 Sıralama</h2>
-        <input type="text" class="search-input" placeholder="Kullanıcı ara..." oninput="filterRankings(this.value)" />
-      </div>
-      <div class="rankings-meta">
-        <span id="total-users-count">Toplam: 0 kullanıcı</span>
-      </div>
-      <div class="rankings-table-wrap">
-        <table class="rankings-table">
-          <thead>
-            <tr><th>#</th><th>Kullanıcı</th><th>Puan</th><th>Doğru</th><th>Çözülen</th><th>Profil</th></tr>
-          </thead>
-          <tbody id="rankings-body"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- ===== TEACHERS ===== -->
-    <section id="page-teachers" class="page">
-      <div class="page-header"><h2>👨‍🏫 Öğretmenler</h2></div>
-      <div id="teachers-grid" class="teachers-grid"></div>
-    </section>
-
-    <!-- ===== WRITINGS ===== -->
-    <section id="page-writings" class="page">
-      <div class="page-header"><h2>✍️ Yazılılar & Senaryolar</h2></div>
-      <div id="writings-grid" class="content-grid"></div>
-    </section>
-
-    <!-- ===== SCHEDULE ===== -->
-    <section id="page-schedule" class="page">
-      <div class="page-header"><h2>📅 Ders Programları</h2></div>
-      <div id="schedule-grid" class="content-grid"></div>
-    </section>
-
-    <!-- ===== PHOTOS ===== -->
-    <section id="page-photos" class="page">
-      <div class="page-header"><h2>🖼️ Okul Fotoğrafları</h2></div>
-      <div id="photos-grid" class="photos-grid"></div>
-    </section>
-
-    <!-- ===== SCHOOL TEACHERS ===== -->
-    <section id="page-schoolteachers" class="page">
-      <div class="page-header"><h2>🏫 Okul Öğretmenleri</h2></div>
-      <div id="schoolteachers-grid" class="teachers-grid"></div>
-    </section>
-
-    <!-- ===== ADMIN UPLOAD ===== -->
-    <section id="page-admin-upload" class="page admin-only">
-      <div class="page-header"><h2>⬆️ İçerik Yükle</h2></div>
-      <div class="admin-upload-grid">
-        <div class="upload-card" onclick="openUploadModal('test')">
-          <span>📝</span><p>Test Ekle</p>
-        </div>
-        <div class="upload-card" onclick="openUploadModal('testbook')">
-          <span>📖</span><p>Test Kitabı Ekle</p>
-        </div>
-        <div class="upload-card" onclick="openUploadModal('exam')">
-          <span>🎯</span><p>Deneme Sınavı Ekle</p>
-        </div>
-        <div class="upload-card" onclick="openUploadModal('writing')">
-          <span>✍️</span><p>Yazılı / Senaryo Ekle</p>
-        </div>
-        <div class="upload-card" onclick="openUploadModal('schedule')">
-          <span>📅</span><p>Ders Programı Ekle</p>
-        </div>
-        <div class="upload-card" onclick="openUploadModal('photo')">
-          <span>🖼️</span><p>Fotoğraf Ekle</p>
-        </div>
-        <div class="upload-card" onclick="openUploadModal('schoolteacher')">
-          <span>🏫</span><p>Okul Öğretmeni Ekle</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- ===== ADMIN USERS ===== -->
-    <section id="page-admin-users" class="page admin-only">
-      <div class="page-header"><h2>👥 Kullanıcı Yönetimi</h2></div>
-      <div class="admin-user-controls">
-        <input type="text" class="search-input" placeholder="Kullanıcı ara..." oninput="filterAdminUsers(this.value)" />
-      </div>
-      <div class="admin-users-table-wrap">
-        <table class="admin-users-table">
-          <thead>
-            <tr><th>Kullanıcı</th><th>E-posta</th><th>Rol</th><th>Katılım</th><th>İşlemler</th></tr>
-          </thead>
-          <tbody id="admin-users-body"></tbody>
-        </table>
-      </div>
-    </section>
-
-  </main><!-- /.main-content -->
-
-</div><!-- /#app -->
-
-<!-- ════════ MODALS ════════ -->
-
-<!-- Profile Panel (Slide) -->
-<div id="profile-panel" class="side-panel hidden">
-  <div class="panel-backdrop" onclick="closePanel('profile-panel')"></div>
-  <div class="panel-content">
-    <button class="panel-close" onclick="closePanel('profile-panel')">✕</button>
-    <div class="profile-header-area">
-      <div class="profile-avatar-wrap">
-        <div class="profile-avatar-lg" id="panel-avatar">?</div>
-        <button class="change-avatar-btn" onclick="triggerAvatarUpload()" title="Fotoğraf Değiştir">📷</button>
-        <input type="file" id="avatar-input" accept="image/*" style="display:none" onchange="handleAvatarUpload(event)" />
-      </div>
-      <h3 id="panel-username">Kullanıcı</h3>
-      <p id="panel-role-badge" class="role-badge">Öğrenci</p>
-      <p id="panel-zodiac" class="zodiac-sign"></p>
     </div>
-    <div class="profile-stats">
-      <div class="stat"><span id="p-score">0</span><small>Puan</small></div>
-      <div class="stat"><span id="p-rank">#—</span><small>Sıralama</small></div>
-      <div class="stat"><span id="p-solved">0</span><small>Çözülen</small></div>
-    </div>
-    <div class="profile-bio-section">
-      <label>Hakkımda</label>
-      <textarea id="panel-bio" placeholder="Kendini tanıt..." maxlength="280" oninput="saveBioDraft()"></textarea>
-      <button class="btn-sm" onclick="saveBio()">Kaydet</button>
-    </div>
-    <div class="profile-settings-section">
-      <h4>Hesap Ayarları</h4>
-      <div class="input-group">
-        <label>Kullanıcı Adını Değiştir <small>(haftada 1 kez)</small></label>
-        <input type="text" id="new-username-input" placeholder="Yeni kullanıcı adı" />
-        <button class="btn-sm" onclick="changeUsername()">Değiştir</button>
+  </section>
+
+  <!-- MİNİ OYUNLAR -->
+  <section class="games-section">
+    <h2 class="section-title">⚡ Mini Oyunlar — Puan Kazan</h2>
+    <div class="mini-games-grid">
+      <div class="mini-game-card" onclick="openGame('flappy')">
+        <div class="mgc-preview flappy-preview">
+          <div class="fp-bird">🐦</div>
+          <div class="fp-pipe top"></div>
+          <div class="fp-pipe bot"></div>
+        </div>
+        <div class="mgc-info">
+          <h3>Flappy Bird</h3>
+          <p>Borulardan kaçarak uç!</p>
+          <div class="mgc-reward">+5 <span>🪙</span>/geçiş</div>
+        </div>
+        <button class="mgc-play-btn">OYNA</button>
       </div>
-      <button class="btn-outline" onclick="openPanel('profile-panel'); switchAuth('reset'); document.getElementById('auth-overlay').classList.add('active')">Şifre Sıfırla</button>
+      <div class="mini-game-card" onclick="openGame('hockey')">
+        <div class="mgc-preview hockey-preview">
+          <div class="hp-puck">🏒</div>
+          <div class="hp-glow"></div>
+        </div>
+        <div class="mgc-info">
+          <h3>Glow Hockey</h3>
+          <p>Rakibini geç, gol at!</p>
+          <div class="mgc-reward">+10 <span>🪙</span>/gol</div>
+        </div>
+        <button class="mgc-play-btn">OYNA</button>
+      </div>
     </div>
-    <button class="btn-danger-sm" onclick="handleLogout()">🚪 Çıkış Yap</button>
-  </div>
+  </section>
+
+  <!-- ANA OYUNLAR (MAĞAZA) -->
+  <section class="shop-section">
+    <h2 class="section-title">🏆 Premium Oyunlar — Satın Al</h2>
+    <div class="shop-grid">
+      <div class="shop-card" id="shop-rpg">
+        <div class="shop-img">⚔️</div>
+        <h3>Epic Quest RPG</h3>
+        <p>Ejderhalar, zırhlar, efsane macera!</p>
+        <div class="shop-price"><span>🪙</span> 500</div>
+        <button class="shop-btn" onclick="buyGame('Epic Quest RPG', 500, 'shop-rpg')">Satın Al</button>
+      </div>
+      <div class="shop-card" id="shop-racer">
+        <div class="shop-img">🚀</div>
+        <h3>Neon Racer X</h3>
+        <p>Işık hızında galaksi yarışları!</p>
+        <div class="shop-price"><span>🪙</span> 350</div>
+        <button class="shop-btn" onclick="buyGame('Neon Racer X', 350, 'shop-racer')">Satın Al</button>
+      </div>
+      <div class="shop-card" id="shop-puzzle">
+        <div class="shop-img">🧩</div>
+        <h3>Quantum Puzzle</h3>
+        <p>Boyutlar arası bulmaca fırtınası!</p>
+        <div class="shop-price"><span>🪙</span> 200</div>
+        <button class="shop-btn" onclick="buyGame('Quantum Puzzle', 200, 'shop-puzzle')">Satın Al</button>
+      </div>
+      <div class="shop-card" id="shop-tower">
+        <div class="shop-img">🏰</div>
+        <h3>Tower Lords</h3>
+        <p>Kule savunması, strateji savaşı!</p>
+        <div class="shop-price"><span>🪙</span> 750</div>
+        <button class="shop-btn" onclick="buyGame('Tower Lords', 750, 'shop-tower')">Satın Al</button>
+      </div>
+    </div>
+  </section>
 </div>
 
-<!-- Other User Profile Modal -->
-<div id="user-profile-modal" class="modal hidden">
-  <div class="modal-backdrop" onclick="closeModal('user-profile-modal')"></div>
-  <div class="modal-card profile-modal-card">
-    <button class="modal-close" onclick="closeModal('user-profile-modal')">✕</button>
-    <div class="profile-avatar-lg" id="modal-user-avatar">?</div>
-    <h3 id="modal-user-username"></h3>
-    <p id="modal-user-role" class="role-badge"></p>
-    <p id="modal-user-zodiac" class="zodiac-sign"></p>
-    <div class="profile-stats">
-      <div class="stat"><span id="modal-user-score">0</span><small>Puan</small></div>
-      <div class="stat"><span id="modal-user-rank">#—</span><small>Sıralama</small></div>
-      <div class="stat"><span id="modal-user-solved">0</span><small>Çözülen</small></div>
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!--  PROFİL PANEL                                                   -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<div id="panel-profile" class="side-panel">
+  <button class="panel-close" onclick="closePanel('panel-profile')">✕</button>
+  <h2 class="panel-title">👤 Profil</h2>
+  <div class="profile-avatar-big" id="profileAvatarBig">?</div>
+  <div class="profile-info">
+    <div class="pi-row"><span>Kullanıcı Adı</span><strong id="pi-username">—</strong></div>
+    <div class="pi-row"><span>E-posta</span><strong id="pi-email">—</strong></div>
+    <div class="pi-row"><span>Toplam Puan</span><strong id="pi-coins">0 🪙</strong></div>
+    <div class="pi-row"><span>Harcanan Puan</span><strong id="pi-spent">0 🪙</strong></div>
+    <div class="pi-row"><span>Satın Alınan Oyunlar</span><strong id="pi-games">0</strong></div>
+    <div class="pi-row"><span>Üye Tarihi</span><strong id="pi-date">—</strong></div>
+  </div>
+  <h3 class="panel-sub">🎒 Kütüphane</h3>
+  <div class="library-list" id="libraryList"><p class="empty-lib">Henüz oyun satın almadın.</p></div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!--  AYARLAR PANEL                                                  -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<div id="panel-settings" class="side-panel right">
+  <button class="panel-close" onclick="closePanel('panel-settings')">✕</button>
+  <h2 class="panel-title">⚙️ Ayarlar</h2>
+  <div class="setting-row">
+    <span>🌙 Dark Mode</span>
+    <label class="toggle">
+      <input type="checkbox" id="darkModeToggle" checked onchange="toggleDarkMode()" />
+      <span class="toggle-slider"></span>
+    </label>
+  </div>
+  <div class="setting-row">
+    <span>🔊 Ses Efektleri</span>
+    <label class="toggle">
+      <input type="checkbox" id="sfxToggle" checked onchange="toggleSFX()" />
+      <span class="toggle-slider"></span>
+    </label>
+  </div>
+  <div class="setting-row">
+    <span>🎵 Müzik</span>
+    <label class="toggle">
+      <input type="checkbox" id="musicToggle" onchange="toggleMusic()" />
+      <span class="toggle-slider"></span>
+    </label>
+  </div>
+  <div class="setting-row vol-row">
+    <span>🔉 Ses Seviyesi</span>
+    <input type="range" id="volumeSlider" min="0" max="100" value="70" oninput="setVolume(this.value)" />
+  </div>
+  <div class="setting-row">
+    <span>🌐 Dil</span>
+    <select class="setting-select" id="langSelect">
+      <option value="tr">Türkçe</option>
+      <option value="en">English</option>
+    </select>
+  </div>
+  <div class="setting-row">
+    <span>✨ Parçacık Efektleri</span>
+    <label class="toggle">
+      <input type="checkbox" id="particlesToggle" checked onchange="toggleParticles()" />
+      <span class="toggle-slider"></span>
+    </label>
+  </div>
+  <button class="btn-danger" onclick="logout()">🚪 Çıkış Yap</button>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!--  FLAPPY BIRD OYUN EKRANI                                        -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<div id="screen-flappy" class="screen game-screen">
+  <div class="game-topbar">
+    <button class="back-btn" onclick="closeGame('flappy')">← Geri</button>
+    <div class="game-score-display">Skor: <span id="flappy-score">0</span></div>
+    <div class="game-coins-display">🪙 <span id="flappy-coins-earned">0</span></div>
+  </div>
+  <div class="game-area" id="flappy-area">
+    <canvas id="flappy-canvas"></canvas>
+    <div class="game-overlay" id="flappy-overlay">
+      <h2>🐦 Flappy Bird</h2>
+      <p>Uçmak için <strong>SPACE</strong> veya ekrana dokun!</p>
+      <p class="reward-hint">Her boru geçişi = <strong>5 🪙</strong></p>
+      <button class="btn-primary" onclick="startFlappy()">Başlat!</button>
     </div>
-    <p id="modal-user-bio" class="modal-bio"></p>
-    <div class="modal-user-actions">
-      <button class="btn-primary" onclick="openDMFromModal()">💬 Mesaj Gönder</button>
-      <button class="btn-danger-sm" onclick="blockUserFromModal()">🚫 Engelle</button>
+    <div class="game-over-overlay" id="flappy-gameover" style="display:none">
+      <h2>💥 Oyun Bitti!</h2>
+      <p>Skor: <span id="flappy-final-score">0</span></p>
+      <p>Kazanılan: <span id="flappy-final-coins">0</span> 🪙</p>
+      <button class="btn-primary" onclick="startFlappy()">Tekrar Oyna</button>
     </div>
   </div>
 </div>
 
-<!-- Settings Panel -->
-<div id="settings-panel" class="side-panel hidden">
-  <div class="panel-backdrop" onclick="closePanel('settings-panel')"></div>
-  <div class="panel-content">
-    <button class="panel-close" onclick="closePanel('settings-panel')">✕</button>
-    <h3>⚙️ Ayarlar</h3>
-    <div class="settings-section">
-      <h4>Görünüm</h4>
-      <label class="toggle-row">
-        <span>Karanlık Mod</span>
-        <label class="toggle-switch">
-          <input type="checkbox" id="dark-mode-toggle" onchange="toggleDarkMode(this)" checked />
-          <span class="toggle-slider"></span>
-        </label>
-      </label>
-      <div class="setting-row">
-        <label>Tema Rengi</label>
-        <div class="color-swatches" id="color-swatches"></div>
-      </div>
-      <div class="setting-row">
-        <label>Yazı Boyutu</label>
-        <input type="range" min="12" max="20" value="14" oninput="setFontSize(this.value)" />
-      </div>
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!--  GLOW HOCKEY OYUN EKRANI                                        -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<div id="screen-hockey" class="screen game-screen">
+  <div class="game-topbar">
+    <button class="back-btn" onclick="closeGame('hockey')">← Geri</button>
+    <div class="game-score-display" id="hockey-score-display">Sen: 0 — AI: 0</div>
+    <div class="game-coins-display">🪙 <span id="hockey-coins-earned">0</span></div>
+  </div>
+  <div class="game-area" id="hockey-area">
+    <canvas id="hockey-canvas"></canvas>
+    <div class="game-overlay" id="hockey-overlay">
+      <h2>🏒 Glow Hockey</h2>
+      <p>Fare / dokunuşla <strong>paleyi hareket ettir!</strong></p>
+      <p class="reward-hint">Her gol = <strong>10 🪙</strong> | İlk 5 gola ulaş!</p>
+      <button class="btn-primary" onclick="startHockey()">Başlat!</button>
     </div>
-    <div class="settings-section">
-      <h4>Ses & Müzik</h4>
-      <label class="toggle-row">
-        <span>Bildirim Sesi</span>
-        <label class="toggle-switch">
-          <input type="checkbox" id="notif-sound-toggle" onchange="toggleSetting('notifSound', this)" checked />
-          <span class="toggle-slider"></span>
-        </label>
-      </label>
-      <label class="toggle-row">
-        <span>Mesaj Sesi</span>
-        <label class="toggle-switch">
-          <input type="checkbox" id="msg-sound-toggle" onchange="toggleSetting('msgSound', this)" checked />
-          <span class="toggle-slider"></span>
-        </label>
-      </label>
-      <label class="toggle-row">
-        <span>Arka Plan Müziği</span>
-        <label class="toggle-switch">
-          <input type="checkbox" id="bg-music-toggle" onchange="toggleBgMusic(this)" />
-          <span class="toggle-slider"></span>
-        </label>
-      </label>
-      <div class="setting-row" id="music-select-row" style="display:none">
-        <label>Müzik Türü</label>
-        <select onchange="changeBgMusic(this.value)">
-          <option value="lofi">🎵 Lo-fi</option>
-          <option value="classical">🎻 Klasik</option>
-          <option value="ambient">🌊 Ambient</option>
-        </select>
-      </div>
-    </div>
-    <div class="settings-section">
-      <h4>Engellenenler</h4>
-      <div id="blocked-list" class="blocked-list"></div>
-    </div>
-    <div class="settings-section">
-      <h4>YKS Tarihi</h4>
-      <input type="date" id="yks-date-input" onchange="setYKSDate(this.value)" />
-      <small>Sayaç için YKS tarihini ayarla</small>
+    <div class="game-over-overlay" id="hockey-gameover" style="display:none">
+      <h2 id="hockey-result-title">🏆 Kazandın!</h2>
+      <p id="hockey-result-detail"></p>
+      <button class="btn-primary" onclick="startHockey()">Tekrar Oyna</button>
     </div>
   </div>
 </div>
 
-<!-- DM Modal -->
-<div id="dm-modal" class="modal hidden">
-  <div class="modal-backdrop" onclick="closeModal('dm-modal')"></div>
-  <div class="modal-card dm-card">
-    <button class="modal-close" onclick="closeModal('dm-modal')">✕</button>
-    <h3 id="dm-modal-title">Mesaj Gönder</h3>
-    <div id="dm-messages" class="dm-messages"></div>
-    <div class="dm-input-row">
-      <input type="text" id="dm-input" placeholder="Mesaj yaz..." onkeydown="handleDMKey(event)" />
-      <button class="send-btn" onclick="sendDM()">➤</button>
-    </div>
-  </div>
-</div>
+<!-- OVERLAY -->
+<div id="overlay" class="overlay" onclick="closeAllPanels()"></div>
 
-<!-- Broadcast Modal (Admin) -->
-<div id="broadcast-modal" class="modal hidden">
-  <div class="modal-backdrop" onclick="closeModal('broadcast-modal')"></div>
-  <div class="modal-card">
-    <button class="modal-close" onclick="closeModal('broadcast-modal')">✕</button>
-    <h3>📢 Duyuru Gönder</h3>
-    <div class="input-group">
-      <label>Hedef</label>
-      <select id="broadcast-target">
-        <option value="all">Herkese</option>
-        <option value="dm">Belirli Kullanıcıya</option>
-      </select>
-    </div>
-    <div id="broadcast-user-select" class="input-group hidden">
-      <label>Kullanıcı Adı</label>
-      <input type="text" id="broadcast-username" placeholder="kullaniciadi" />
-    </div>
-    <div class="input-group">
-      <label>Mesaj</label>
-      <textarea id="broadcast-message" placeholder="Duyuru mesajını yaz..." rows="4"></textarea>
-    </div>
-    <button class="btn-primary" onclick="sendBroadcast()">Gönder</button>
-  </div>
-</div>
+<!-- TOAST -->
+<div id="toast" class="toast"></div>
 
-<!-- Upload Modal (Admin/Teacher) -->
-<div id="upload-modal" class="modal hidden">
-  <div class="modal-backdrop" onclick="closeModal('upload-modal')"></div>
-  <div class="modal-card">
-    <button class="modal-close" onclick="closeModal('upload-modal')">✕</button>
-    <h3 id="upload-modal-title">İçerik Yükle</h3>
-    <div class="input-group">
-      <label>Başlık</label>
-      <input type="text" id="upload-title" placeholder="İçerik başlığı" />
-    </div>
-    <div class="input-group">
-      <label>Ders / Kategori</label>
-      <select id="upload-subject">
-        <option>Matematik</option>
-        <option>Türkçe</option>
-        <option>Fizik</option>
-        <option>Kimya</option>
-        <option>Biyoloji</option>
-        <option>Tarih</option>
-        <option>Coğrafya</option>
-        <option>Edebiyat</option>
-        <option>İngilizce</option>
-        <option>Diğer</option>
-      </select>
-    </div>
-    <div class="input-group">
-      <label>Açıklama</label>
-      <textarea id="upload-desc" rows="3" placeholder="Kısa açıklama"></textarea>
-    </div>
-    <div class="input-group">
-      <label>Dosya (PDF / Görsel)</label>
-      <input type="file" id="upload-file" accept=".pdf,.jpg,.png,.jpeg" />
-    </div>
-    <div id="upload-questions-section" class="hidden">
-      <label>Sorular (JSON formatı)</label>
-      <textarea id="upload-questions" rows="6" placeholder='[{"q":"Soru metni","options":["A","B","C","D"],"answer":0}]'></textarea>
-    </div>
-    <button class="btn-primary" onclick="submitUpload()">⬆️ Yükle</button>
-  </div>
-</div>
+<!-- COIN BURST -->
+<div id="coin-burst" class="coin-burst"></div>
 
-<!-- Test Result Modal -->
-<div id="result-modal" class="modal hidden">
-  <div class="modal-backdrop"></div>
-  <div class="modal-card result-card">
-    <h3>📊 Sonuçların</h3>
-    <div id="result-content" class="result-content"></div>
-    <button class="btn-primary" onclick="closeModal('result-modal'); showPage('tests')">Testlere Dön</button>
-  </div>
-</div>
-
-<!-- Toast -->
-<div id="toast-container" class="toast-container"></div>
-
-<script src="app.js" type="module"></script>
+<script src="game.js"></script>
 </body>
 </html>

@@ -27,10 +27,8 @@
         <kbd>⌘K</kbd>
       </div>
     </div>
-    <div class="header-right">
-      <button class="hdr-btn" onclick="showSection('admin')" title="Admin Paneli">
-        <svg viewBox="0 0 24 24"><path d="M12 2a5 5 0 1 1 0 10A5 5 0 0 1 12 2zm0 12c5.33 0 8 2.67 8 4v2H4v-2c0-1.33 2.67-4 8-4z"/></svg>
-      </button>
+    <div class="header-right" id="adminIndicator" style="display:none">
+      <div class="admin-active-dot" title="Admin modu aktif"></div>
     </div>
   </header>
 
@@ -252,6 +250,28 @@
         <button class="btn-secondary" id="modalLinkBtn" onclick="openLinkFromModal()">Bağlantıyı Aç →</button>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- KONAMI OVERLAY -->
+<div id="konamiOverlay" class="konami-overlay">
+  <div class="konami-box">
+    <div class="konami-logo">Ş</div>
+    <div class="konami-title">YÖNETİCİ ERİŞİMİ</div>
+    <div class="konami-keys">
+      <span class="kk" id="kk0">↑</span>
+      <span class="kk" id="kk1">↑</span>
+      <span class="kk" id="kk2">↓</span>
+      <span class="kk" id="kk3">↓</span>
+      <span class="kk" id="kk4">←</span>
+      <span class="kk" id="kk5">→</span>
+      <span class="kk" id="kk6">←</span>
+      <span class="kk" id="kk7">→</span>
+      <span class="kk" id="kk8">S</span>
+      <span class="kk" id="kk9">A</span>
+    </div>
+    <div class="konami-hint" id="konamiHint">Gizli kombinasyonu gir</div>
+    <button class="konami-cancel" onclick="closeKonami()">İptal</button>
   </div>
 </div>
 

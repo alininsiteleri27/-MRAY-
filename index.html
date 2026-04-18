@@ -211,8 +211,26 @@
             </div>
             <input type="file" id="fPdfFile" accept=".pdf" style="display:none">
           </div>
+          <div class="fg" style="margin-bottom:12px">
+            <label>Kapak Görseli</label>
+            <div class="cover-img-row">
+              <div class="cover-preview" id="coverPreview">
+                <span id="coverPreviewText">Önizleme</span>
+                <img id="coverPreviewImg" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:6px">
+              </div>
+              <div class="cover-img-inputs">
+                <input type="text" id="fImgUrl" class="fi" placeholder="Resim URL'si (https://...)" oninput="previewImgUrl(this.value)">
+                <div class="cover-img-or">— veya —</div>
+                <div class="file-drop-mini" onclick="document.getElementById('fImgFile').click()">
+                  <span id="fImgFileName">Bilgisayardan resim seç</span>
+                </div>
+                <input type="file" id="fImgFile" accept="image/*" style="display:none" onchange="previewImgFile(this)">
+                <button type="button" class="btn-clear-img" onclick="clearCoverImg()" id="btnClearImg" style="display:none">Görseli Kaldır ✕</button>
+              </div>
+            </div>
+          </div>
           <div class="fg">
-            <label>Kapak Rengi</label>
+            <label>Kapak Rengi <span style="color:var(--text3);font-size:11px">(görsel yoksa kullanılır)</span></label>
             <div class="cover-colors" id="coverColors">
               <div class="cc on" data-c="c1" style="background:linear-gradient(135deg,#1a1a2e,#16213e)"></div>
               <div class="cc" data-c="c2" style="background:linear-gradient(135deg,#0d1b2a,#1b4332)"></div>

@@ -1,45 +1,150 @@
+// ====================== FIREBASE CONFIG ======================
+const firebaseConfig = {
+  apiKey: "AIzaSyDuKLuoePZ6mNsKhQBGXumxMwF0UKTQvc8",
+  authDomain: "oyun-75056.firebaseapp.com",
+  databaseURL: "https://oyun-75056-default-rtdb.firebaseio.com",
+  projectId: "oyun-75056",
+  storageBucket: "oyun-75056.firebasestorage.app",
+  messagingSenderId: "980660244755",
+  appId: "1:980660244755:web:47889c4b6637ab05cdcae6",
+  measurementId: "G-J9RKPSVT8B"
+};
+
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
+const booksRef = database.ref('sahikali_books');
+
+// ====================== LOCAL CACHE ======================
+let booksCache = [];
+let dbReady = false;
+
 // ====================== DATA LAYER ======================
 const DB = {
   get() {
-    try { return JSON.parse(localStorage.getItem('bookplatform_books') || '[]'); }
-    catch { return []; }
-  },
-  save(books) {
-    try {
-      localStorage.setItem('bookplatform_books', JSON.stringify(books));
-    } catch (e) {
-      if (e.name === 'QuotaExceededError' || e.code === 22) {
-        toast('⚠️ Depolama alanı doldu! Büyük resim/PDF yerine link kullanın.', 'danger');
-      } else {
-        toast('Kayıt hatası: ' + e.message, 'danger');
-      }
-    }
+    return booksCache;
   },
   add(book) {
-    const books = this.get();
     book.id = Date.now().toString(36) + Math.random().toString(36).slice(2);
     book.createdAt = new Date().toISOString();
-    books.push(book);
-    this.save(books);
+    booksRef.child(book.id).set(book);
     return book;
   },
-  delete(id) { this.save(this.get().filter(b => b.id !== id)); },
-  update(id, changes) { this.save(this.get().map(b => b.id === id ? { ...b, ...changes } : b)); },
-  toggleFeatured(id) { this.save(this.get().map(b => b.id === id ? { ...b, featured: !b.featured } : b)); }
+  delete(id) {
+    booksRef.child(id).remove();
+  },
+  update(id, changes) {
+    booksRef.child(id).update(changes);
+  },
+  toggleFeatured(id) {
+    const book = booksCache.find(b => b.id === id);
+    if (book) {
+      booksRef.child(id).update({ featured: !book.featured });
+    }
+  }
 };
 
 // ====================== SAMPLE DATA ======================
 function seedSampleBooks() {
-  if (DB.get().length > 0) return;
+  if (booksCache.length > 0) return;
   const samples = [
-    { title: 'Matematik Soru Bankası 9. Sınıf', publisher: 'Palme Yayıncılık', grade: '9', type: 'test', pages: '320', description: 'Üniversite sınavına hazırlık için kapsamlı 9. sınıf matematik soru bankası.', link: '#', image: 'https://placehold.co/400x300/111118/6366f1?text=Matematik+9', featured: true },
-    { title: 'Türkçe Ders Anlatımı 8. Sınıf', publisher: 'MEB Yayınları', grade: '8', type: 'ders_anlat', pages: '280', description: 'LGS hazırlığı için 8. sınıf Türkçe ders anlatım kitabı.', link: '#', image: 'https://placehold.co/400x300/111118/8b5cf6?text=Türkçe+8', featured: true },
-    { title: 'Fen Bilimleri Ders Kitabı 7. Sınıf', publisher: 'MEB Yayınları', grade: '7', type: 'ders', pages: '250', description: 'MEB onaylı 7. sınıf Fen Bilimleri resmi ders kitabı.', link: '#', image: 'https://placehold.co/400x300/111118/06b6d4?text=Fen+7', featured: false },
-    { title: 'İngilizce Hikaye Kitapları Seti', publisher: 'Oxford University Press', grade: '10', type: 'okuma', pages: '150', description: 'Orta seviye İngilizce okuma becerilerini geliştiren hikaye seti.', link: '#', image: 'https://placehold.co/400x300/111118/10b981?text=İngilizce+10', featured: true },
-    { title: 'AYT Matematik Deneme Sınavları', publisher: 'Benim Hocam', grade: '12', type: 'deneme', pages: '180', description: '40 adet tam boyutlu AYT Matematik deneme sınavı.', link: '#', image: 'https://placehold.co/400x300/111118/f59e0b?text=AYT+Mat', featured: true },
-    { title: 'Sosyal Bilgiler Ders Kitabı 6. Sınıf', publisher: 'MEB Yayınları', grade: '6', type: 'ders', pages: '220', description: '6. sınıf MEB onaylı Sosyal Bilgiler ders kitabı.', link: '#', image: 'https://placehold.co/400x300/111118/ef4444?text=Sosyal+6', featured: false }
+    { title: 'Matematik Soru Bankası 9. Sınıf', publisher: 'Palme Yayıncılık', grade: '9', type: 'test', pages: '320', link: '#', image: 'https://placehold.co/400x300/111118/6366f1?text=Matematik+9', featured: true },
+    { title: 'Türkçe Ders Anlatımı 8. Sınıf', publisher: 'MEB Yayınları', grade: '8', type: 'ders_anlat', pages: '280', link: '#', image: 'https://placehold.co/400x300/111118/8b5cf6?text=Türkçe+8', featured: true },
+    { title: 'Fen Bilimleri Ders Kitabı 7. Sınıf', publisher: 'MEB Yayınları', grade: '7', type: 'ders', pages: '250', link: '#', image: 'https://placehold.co/400x300/111118/06b6d4?text=Fen+7', featured: false },
+    { title: 'İngilizce Hikaye Kitapları Seti', publisher: 'Oxford University Press', grade: '10', type: 'okuma', pages: '150', link: '#', image: 'https://placehold.co/400x300/111118/10b981?text=İngilizce+10', featured: true },
+    { title: 'AYT Matematik Deneme Sınavları', publisher: 'Benim Hocam', grade: '12', type: 'deneme', pages: '180', link: '#', image: 'https://placehold.co/400x300/111118/f59e0b?text=AYT+Mat', featured: true },
+    { title: 'Sosyal Bilgiler Ders Kitabı 6. Sınıf', publisher: 'MEB Yayınları', grade: '6', type: 'ders', pages: '220', link: '#', image: 'https://placehold.co/400x300/111118/ef4444?text=Sosyal+6', featured: false }
   ];
-  samples.forEach(b => DB.add(b));
+  const AUTO_SEED_DESC = `Şahikali Sitesi'nde öğrenciler için harika bir fırsat var! 📚\nTüm kitap PDF'leri, öğrencilerin başarıya ulaşmasına katkı sağlamak amacıyla tamamen ücretsiz olarak paylaşılıyor.\n\nKurucu Reisza, eğitime destek olmaktan asla geri durmuyor ve her gün yeni testler, okuma materyalleri ve ders anlatım kitapları ekleyerek içerikleri sürekli güncel tutuyor.\n\nBaşarıya giden yolda sen de yerini al, Şahikali ile öğrenmeyi kolaylaştır! 🚀`;
+  samples.forEach(b => {
+    b.description = AUTO_SEED_DESC;
+    DB.add(b);
+  });
+}
+
+// ====================== FIREBASE REAL-TIME LISTENER ======================
+function startFirebaseSync() {
+  showLoadingOverlay(true);
+
+  booksRef.on('value', (snapshot) => {
+    const data = snapshot.val();
+    if (data && typeof data === 'object') {
+      booksCache = Object.entries(data).map(([id, book]) => ({ ...book, id }));
+      // Sort by createdAt desc (newest first)
+      booksCache.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+    } else {
+      booksCache = [];
+    }
+
+    if (!dbReady) {
+      dbReady = true;
+      showLoadingOverlay(false);
+      // First load: seed if empty
+      seedSampleBooks();
+      showPage('home');
+    }
+
+    // Re-render active views
+    renderAll();
+    updateLiveStats();
+  }, (error) => {
+    showLoadingOverlay(false);
+    toast('❌ Veritabanı bağlantı hatası: ' + error.message, 'danger');
+  });
+}
+
+function renderAll() {
+  const p = state.activePage;
+  if (p === 'featured') renderFeatured();
+  if (p === 'books') renderBooks();
+  if (p === 'search') renderSearch();
+  if (p === 'home') updateLiveStats();
+  // Always refresh admin list if open
+  if (document.getElementById('admin-panel').classList.contains('open')) {
+    renderAdminBooks();
+  }
+}
+
+// ====================== LOADING OVERLAY ======================
+function showLoadingOverlay(show) {
+  let el = document.getElementById('loading-overlay');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'loading-overlay';
+    el.innerHTML = `
+      <div class="loading-inner">
+        <div class="loading-logo">📚</div>
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Kitaplar yükleniyor...</div>
+      </div>`;
+    el.style.cssText = `
+      position:fixed;inset:0;z-index:9000;
+      background:var(--bg-primary);
+      display:flex;align-items:center;justify-content:center;
+      flex-direction:column;gap:16px;
+      transition:opacity 0.4s ease;
+    `;
+    document.body.appendChild(el);
+
+    // Inject spinner styles
+    const style = document.createElement('style');
+    style.textContent = `
+      .loading-inner{display:flex;flex-direction:column;align-items:center;gap:18px;}
+      .loading-logo{font-size:3rem;animation:pulse 1.5s ease infinite;}
+      .loading-spinner{width:40px;height:40px;border:3px solid rgba(99,102,241,0.2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;}
+      .loading-text{font-family:'Outfit',sans-serif;font-size:1rem;font-weight:600;color:var(--text-secondary);}
+      @keyframes spin{to{transform:rotate(360deg)}}
+    `;
+    document.head.appendChild(style);
+  }
+  if (show) {
+    el.style.opacity = '1';
+    el.style.pointerEvents = 'all';
+    el.style.display = 'flex';
+  } else {
+    el.style.opacity = '0';
+    el.style.pointerEvents = 'none';
+    setTimeout(() => { if (el) el.style.display = 'none'; }, 400);
+  }
 }
 
 // ====================== STATE ======================
@@ -70,7 +175,9 @@ const $$ = s => document.querySelectorAll(s);
 
 // ====================== SPA NAVIGATION ======================
 function showPage(name) {
-  if (state.activePage === name) return;
+  if (state.activePage === name && dbReady) {
+    // Allow re-triggering renders even on same page after DB sync
+  }
   state.activePage = name;
 
   // hide all pages
@@ -80,13 +187,12 @@ function showPage(name) {
   const target = $(`page-${name}`);
   if (target) {
     requestAnimationFrame(() => target.classList.add('active'));
-    // scroll inner content to top
     const inner = target.querySelector('.page-inner');
     if (inner) inner.scrollTop = 0;
     target.scrollTop = 0;
   }
 
-  // update nav buttons
+  // update top nav buttons
   $$('.nav-btn').forEach(b => b.classList.remove('active'));
   const nbtn = $(`nav-${name === 'books' ? 'books' : name === 'featured' ? 'featured' : name === 'search' ? 'search-page' : 'home'}`);
   if (nbtn) nbtn.classList.add('active');
@@ -105,9 +211,9 @@ function showPage(name) {
 
 // Called from home page quick-category cards
 function goToCategory(cat) {
+  state.activePage = ''; // force re-render
   showPage('books');
   state.booksCat = cat;
-  // update cat buttons after render
   setTimeout(() => {
     $$('.cat-btn').forEach(b => {
       b.classList.toggle('active', b.dataset.cat === cat);
@@ -122,10 +228,10 @@ window.goToCategory = goToCategory;
 // ====================== BOOK CARD HTML ======================
 function makeBookCard(book, delay = 0) {
   const typeLabel = TYPE_LABELS[book.type] || book.type;
-  const img = book.imageData || book.image || `https://placehold.co/400x300/111118/6366f1?text=${encodeURIComponent(book.title.slice(0,12))}`;
+  const img = book.imageData || book.image || `https://placehold.co/400x300/111118/6366f1?text=${encodeURIComponent((book.title || '').slice(0,12))}`;
   const col = TYPE_COLORS[book.type] || '1';
   return `
-  <div class="book-card" style="animation-delay:${delay}ms" onclick="openModal('${book.id}')" role="listitem" tabindex="0">
+  <div class="book-card" style="animation-delay:${delay}ms" onclick="openModal('${book.id}')" role="listitem" tabindex="0" aria-label="${book.title}">
     <div class="book-img-wrap">
       <img src="${img}" alt="${book.title}" loading="lazy" onerror="this.src='https://placehold.co/400x300/0d0d12/6366f1?text=📚'"/>
       <span class="book-badge">${typeLabel}</span>
@@ -147,6 +253,7 @@ function makeBookCard(book, delay = 0) {
 function renderFeatured() {
   const grid = $('featured-carousel');
   if (!grid) return;
+  if (!dbReady) { grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="loading-spinner" style="margin:0 auto"></div></div>'; return; }
   const featured = DB.get().filter(b => b.featured);
   if (featured.length === 0) {
     grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-icon">⭐</div><h3>Öne çıkan kitap yok</h3><p>Admin panelinden kitapları öne çıkarın.</p></div>`;
@@ -196,7 +303,7 @@ function renderSearch() {
     books = books.filter(b =>
       b.title.toLowerCase().includes(ql) ||
       b.publisher.toLowerCase().includes(ql) ||
-      b.grade.includes(ql) ||
+      (b.grade || '').includes(ql) ||
       (TYPE_LABELS[b.type] || '').toLowerCase().includes(ql)
     );
   }
@@ -288,13 +395,11 @@ function renderAdminBooks() {
 
 function adminToggleFeatured(id) {
   DB.toggleFeatured(id);
-  renderAdminBooks(); renderFeatured(); updateLiveStats();
   toast('Öne çıkan durumu güncellendi!', 'success');
 }
 function adminDeleteBook(id) {
   if (!confirm('Bu kitabı silmek istediğinize emin misiniz?')) return;
   DB.delete(id);
-  renderAdminBooks(); renderBooks(); renderFeatured(); renderSearch(); updateLiveStats();
   toast('Kitap silindi.', 'danger');
 }
 function adminEditBook(id) {
@@ -305,7 +410,6 @@ function adminEditBook(id) {
   $('f-title').value = book.title;
   $('f-publisher').value = book.publisher;
   $('f-type').value = book.type;
-  // Sınıf alanını tipe göre göster/gizle
   const isOkuma = book.type === 'okuma';
   $('grade-field').style.display = isOkuma ? 'none' : '';
   $('f-grade').value = isOkuma ? '' : (book.grade || '');
@@ -317,12 +421,8 @@ function adminEditBook(id) {
   $('form-title-label').textContent = '✏️ Kitabı Düzenle';
   $('btn-submit-form').textContent = 'Güncelle';
 }
-const AUTO_DESC = `Şahikali Sitesi'nde öğrenciler için harika bir fırsat var! 📚
-Tüm kitap PDF'leri, öğrencilerin başarıya ulaşmasına katkı sağlamak amacıyla tamamen ücretsiz olarak paylaşılıyor.
 
-Kurucu Reisza, eğitime destek olmaktan asla geri durmuyor ve her gün yeni testler, okuma materyalleri ve ders anlatım kitapları ekleyerek içerikleri sürekli güncel tutuyor.
-
-Başarıya giden yolda sen de yerini al, Şahikali ile öğrenmeyi kolaylaştır! 🚀`;
+const AUTO_DESC = `Şahikali Sitesi'nde öğrenciler için harika bir fırsat var! 📚\nTüm kitap PDF'leri, öğrencilerin başarıya ulaşmasına katkı sağlamak amacıyla tamamen ücretsiz olarak paylaşılıyor.\n\nKurucu Reisza, eğitime destek olmaktan asla geri durmuyor ve her gün yeni testler, okuma materyalleri ve ders anlatım kitapları ekleyerek içerikleri sürekli güncel tutuyor.\n\nBaşarıya giden yolda sen de yerini al, Şahikali ile öğrenmeyi kolaylaştır! 🚀`;
 
 function resetAdminForm() {
   $('book-form').reset();
@@ -334,7 +434,6 @@ function resetAdminForm() {
   $('img-name').textContent = '';
   window._pdfData = null;
   window._imgData = null;
-  // Yeni kitap eklerken açıklama alanını otomatik doldur
   if ($('f-desc')) $('f-desc').value = AUTO_DESC;
 }
 
@@ -345,17 +444,15 @@ function setupAdminForm() {
 
   $('f-pdf').addEventListener('change', e => {
     const file = e.target.files[0]; if (!file) return;
-    // PDF base64 localStorage'a sığmaz — sadece adını göster, link girilmesini iste
     $('pdf-name').textContent = '⚠️ PDF yerine aşağıya link girin: ' + file.name;
     toast('PDF dosyaları çok büyük olduğu için direkt yüklenemez. Lütfen PDF\'i bir sisteme yükleyip linkini girin.', 'danger');
-    window._pdfData = null; // base64 saklamıyoruz
+    window._pdfData = null;
     e.target.value = '';
   });
 
   $('f-image').addEventListener('change', e => {
     const file = e.target.files[0]; if (!file) return;
     $('img-name').textContent = file.name;
-    // Resmi canvas ile sıkıştır (max 400x300, kalite 0.7)
     const img = new Image();
     const url = URL.createObjectURL(file);
     img.onload = () => {
@@ -371,9 +468,8 @@ function setupAdminForm() {
       window._imgData = compressed;
       $('img-preview').src = compressed;
       $('img-preview-wrap').classList.add('show');
-      // Boyut uyarısı
       const kb = Math.round(compressed.length * 0.75 / 1024);
-      if (kb > 200) toast(`Resim ${kb}KB — çok fazla resim eklenirse depolama dolabilir.`, 'default');
+      if (kb > 200) toast(`Resim ${kb}KB — büyük resimler yüklemeyi yavaşlatabilir.`, 'default');
     };
     img.src = url;
   });
@@ -400,8 +496,11 @@ function setupAdminForm() {
     const imgVal = window._imgData;
     const imgFallback = `https://placehold.co/400x300/111118/6366f1?text=${encodeURIComponent(title.slice(0,12))}`;
 
-    const bookData = { title, publisher, grade, type, pages, link, description: desc, featured,
-      pdfData: null, // PDF base64 saklanmıyor — link kullan
+    const bookData = {
+      title, publisher, grade, type, pages, link,
+      description: desc || AUTO_DESC,
+      featured,
+      pdfData: null,
       imageData: imgVal || null,
       image: imgVal ? null : imgFallback
     };
@@ -411,19 +510,18 @@ function setupAdminForm() {
       if (!bookData.imageData && old) { bookData.imageData = old.imageData; bookData.image = old.image; }
       if (!bookData.pdfData && old) bookData.pdfData = old.pdfData;
       DB.update(state.editingId, bookData);
-      toast('Kitap güncellendi!', 'success');
+      toast('✅ Kitap güncellendi!', 'success');
     } else {
       DB.add(bookData);
-      toast('Kitap başarıyla eklendi!', 'success');
+      toast('✅ Kitap başarıyla eklendi!', 'success');
     }
 
     resetAdminForm();
-    renderBooks(); renderFeatured(); renderSearch(); renderAdminBooks(); updateLiveStats();
+    // Firebase listener will auto re-render
   });
 
   $('btn-reset-form').addEventListener('click', resetAdminForm);
 
-  // Okuma kitabı seçilince sınıf alanını gizle
   function toggleGradeField() {
     const isOkuma = $('f-type').value === 'okuma';
     const gradeField = $('grade-field');
@@ -435,7 +533,6 @@ function setupAdminForm() {
 
 // ====================== SEARCH SETUP ======================
 function setupSearch() {
-  // nav search → go to search page and fill
   $('nav-search-input').addEventListener('input', function () {
     state.searchText = this.value;
     $('search-input').value = this.value;
@@ -503,13 +600,11 @@ function toast(msg, type = 'default') {
   const icons = { default: 'ℹ️', success: '✅', danger: '❌' };
   el.innerHTML = `<span>${icons[type] || 'ℹ️'}</span>${msg}`;
   $('toast').appendChild(el);
-  setTimeout(() => { el.style.animation = 'toastOut 0.3s ease forwards'; setTimeout(() => el.remove(), 300); }, 3000);
+  setTimeout(() => { el.style.animation = 'toastOut 0.3s ease forwards'; setTimeout(() => el.remove(), 300); }, 3500);
 }
 
 // ====================== INIT ======================
 document.addEventListener('DOMContentLoaded', () => {
-  seedSampleBooks();
-  updateLiveStats();
   setupAdminForm();
   setupSearch();
   setupCategoryFilter();
@@ -523,8 +618,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Admin
   $('admin-close').addEventListener('click', closeAdmin);
 
-  // Show home on start
-  showPage('home');
+  // Start Firebase sync (shows loading overlay until ready)
+  startFirebaseSync();
 });
 
 // Expose globals
@@ -536,3 +631,5 @@ window.adminDeleteBook = adminDeleteBook;
 window.adminEditBook = adminEditBook;
 window.adminToggleFeatured = adminToggleFeatured;
 window.switchAdminTab = switchAdminTab;
+window.renderSearch = renderSearch;
+window.state = state;

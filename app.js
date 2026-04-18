@@ -158,9 +158,13 @@ function renderHomeGrid(list) {
 }
 
 function bookCardHTML(b) {
+  const coverInner = b.img
+    ? `<img src="${b.img}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0" onerror="this.style.display='none'">`
+    : '';
   return `<div class="bcard" onclick="openModal('${b.id}')">
-    <div class="bcover ${b.cover || 'c1'}">
-      <span class="pub-label">${b.pub || ''}</span>
+    <div class="bcover ${b.cover || 'c1'}" style="position:relative">
+      ${coverInner}
+      <span class="pub-label" style="position:relative;z-index:1">${b.pub || ''}</span>
     </div>
     <div class="binfo">
       <div class="btitle">${b.title}</div>
@@ -245,6 +249,50 @@ function renderAdminList() {
   `).join('');
 }
 
+// ── COVER IMAGE ────────────────────────────
+let selectedImgData = null; // base64 veya URL
+
+function previewImgUrl(url) {
+  if (!url) { clearCoverImg(); return; }
+  document.getElementById('coverPreviewImg').src = url;
+  document.getElementById('coverPreviewImg').style.display = 'block';
+  document.getElementById('coverPreviewText').style.display = 'none';
+  document.getElementById('btnClearImg').style.display = '';
+  selectedImgData = url;
+  // dosya inputunu temizle
+  document.getElementById('fImgFile').value = '';
+  document.getElementById('fImgFileName').textContent = 'Bilgisayardan resim seç';
+}
+
+function previewImgFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const data = e.target.result;
+    document.getElementById('coverPreviewImg').src = data;
+    document.getElementById('coverPreviewImg').style.display = 'block';
+    document.getElementById('coverPreviewText').style.display = 'none';
+    document.getElementById('btnClearImg').style.display = '';
+    document.getElementById('fImgFileName').textContent = file.name;
+    selectedImgData = data;
+    // url inputunu temizle
+    document.getElementById('fImgUrl').value = '';
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearCoverImg() {
+  selectedImgData = null;
+  document.getElementById('coverPreviewImg').src = '';
+  document.getElementById('coverPreviewImg').style.display = 'none';
+  document.getElementById('coverPreviewText').style.display = '';
+  document.getElementById('btnClearImg').style.display = 'none';
+  document.getElementById('fImgUrl').value = '';
+  document.getElementById('fImgFile').value = '';
+  document.getElementById('fImgFileName').textContent = 'Bilgisayardan resim seç';
+}
+
 // ── ADD BOOK ───────────────────────────────
 async function addBook() {
   const title = document.getElementById('fTitle').value.trim();
@@ -263,6 +311,8 @@ async function addBook() {
 
   const id = 'book_' + Date.now();
   const book = { id, title, author, cat, pub, type, cover: selectedCoverColor };
+
+  if (selectedImgData) book.img = selectedImgData;
 
   if (type === 'pdf' && pdfFile) {
     const blobUrl = URL.createObjectURL(pdfFile);
@@ -285,6 +335,7 @@ async function addBook() {
   document.getElementById('fLink').value = '';
   document.getElementById('fPdfFile').value = '';
   document.getElementById('fPdfName').textContent = 'Dosya seçmek için tıkla';
+  clearCoverImg();
   showSection('anasayfa');
 }
 
@@ -301,7 +352,14 @@ function openModal(id) {
   const b = books.find(x => x.id === id);
   if (!b) return;
   currentModal = b;
-  document.getElementById('modalCover').className = 'modal-cover ' + (b.cover || 'c1');
+  const coverEl = document.getElementById('modalCover');
+  coverEl.className = 'modal-cover ' + (b.cover || 'c1');
+  coverEl.style.position = 'relative'; coverEl.style.overflow = 'hidden';
+  if (b.img) {
+    coverEl.innerHTML = `<img src="${b.img}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">`;
+  } else {
+    coverEl.innerHTML = '';
+  }
   document.getElementById('modalPub').textContent = b.pub || '';
   document.getElementById('modalTitle').textContent = b.title;
   document.getElementById('modalAuthor').textContent = b.author || '';

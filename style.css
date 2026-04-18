@@ -404,6 +404,75 @@ input[type=range] { accent-color: var(--accent); cursor: pointer; }
 .bcard { animation: fadeIn 0.3s ease; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
+/* KONAMI OVERLAY */
+.konami-overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(0,0,0,0.85);
+  align-items: center; justify-content: center;
+  backdrop-filter: blur(8px);
+}
+.konami-overlay.open { display: flex; }
+.konami-box {
+  background: var(--bg2);
+  border: 0.5px solid var(--border2);
+  border-radius: var(--radius-lg);
+  padding: 36px 40px;
+  text-align: center;
+  min-width: 320px;
+  animation: fadeUp 0.2s ease;
+}
+.konami-logo {
+  width: 52px; height: 52px;
+  background: var(--accent); color: #fff;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 32px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 12px; margin: 0 auto 16px;
+}
+.konami-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px; letter-spacing: 4px;
+  color: var(--text); margin-bottom: 24px;
+}
+.konami-keys {
+  display: flex; gap: 6px; justify-content: center;
+  flex-wrap: wrap; margin-bottom: 16px;
+}
+.kk {
+  width: 34px; height: 34px;
+  background: var(--bg3);
+  border: 0.5px solid var(--border);
+  border-radius: 7px;
+  font-family: 'Space Mono', monospace;
+  font-size: 13px; color: var(--text3);
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.kk.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.kk.done { background: rgba(232,93,93,0.15); border-color: var(--accent); color: var(--accent); }
+.konami-hint {
+  font-size: 12px; color: var(--text3);
+  font-family: 'Space Mono', monospace;
+  margin-bottom: 20px; min-height: 18px;
+}
+.konami-cancel {
+  background: transparent; border: 0.5px solid var(--border);
+  color: var(--text3); border-radius: var(--radius);
+  padding: 7px 20px; font-size: 13px; cursor: pointer;
+  transition: all 0.15s;
+}
+.konami-cancel:hover { border-color: var(--border2); color: var(--text2); }
+
+/* ADMIN INDICATOR */
+.admin-active-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
 @media (max-width: 600px) {
   main { padding: 16px; }
   .form-row { grid-template-columns: 1fr; }

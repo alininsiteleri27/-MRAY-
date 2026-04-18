@@ -323,6 +323,10 @@ function closeModal() {
   document.getElementById('modal').classList.remove('open');
 }
 
+function openLink(url) {
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+
 function openFromModal() {
   if (!currentModal) return;
   closeModal();

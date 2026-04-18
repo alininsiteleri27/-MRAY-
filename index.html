@@ -194,18 +194,29 @@
         />
         <select id="filter-grade" class="search-select" aria-label="Sınıf filtrele">
           <option value="">🎓 Tüm Sınıflar</option>
-          <option value="1">1. Sınıf</option>
-          <option value="2">2. Sınıf</option>
-          <option value="3">3. Sınıf</option>
-          <option value="4">4. Sınıf</option>
-          <option value="5">5. Sınıf</option>
-          <option value="6">6. Sınıf</option>
-          <option value="7">7. Sınıf</option>
-          <option value="8">8. Sınıf</option>
-          <option value="9">9. Sınıf</option>
-          <option value="10">10. Sınıf</option>
-          <option value="11">11. Sınıf</option>
-          <option value="12">12. Sınıf</option>
+          <optgroup label="── İlk/Ortaokul ──">
+            <option value="okul_oncesi">Okul Öncesi</option>
+            <option value="1">1. Sınıf</option>
+            <option value="2">2. Sınıf</option>
+            <option value="3">3. Sınıf</option>
+            <option value="4">4. Sınıf</option>
+            <option value="5">5. Sınıf</option>
+            <option value="6">6. Sınıf</option>
+            <option value="7">7. Sınıf</option>
+            <option value="8">8. Sınıf</option>
+          </optgroup>
+          <optgroup label="── Lise ──">
+            <option value="9">9. Sınıf</option>
+            <option value="10">10. Sınıf</option>
+            <option value="11">11. Sınıf</option>
+            <option value="12">12. Sınıf</option>
+          </optgroup>
+          <optgroup label="── Sınav ──">
+            <option value="tyt">TYT</option>
+            <option value="ayt">AYT</option>
+            <option value="tyt_ayt">TYT + AYT</option>
+            <option value="kpss">KPSS</option>
+          </optgroup>
         </select>
         <input
           id="filter-publisher"
@@ -314,12 +325,29 @@
               <label class="form-label" for="f-grade">🎓 Sınıf *</label>
               <select id="f-grade" class="form-select">
                 <option value="">Sınıf Seçin</option>
-                <option value="1">1. Sınıf</option><option value="2">2. Sınıf</option>
-                <option value="3">3. Sınıf</option><option value="4">4. Sınıf</option>
-                <option value="5">5. Sınıf</option><option value="6">6. Sınıf</option>
-                <option value="7">7. Sınıf</option><option value="8">8. Sınıf</option>
-                <option value="9">9. Sınıf</option><option value="10">10. Sınıf</option>
-                <option value="11">11. Sınıf</option><option value="12">12. Sınıf</option>
+                <optgroup label="── İlk/Ortaokul ──">
+                  <option value="okul_oncesi">Okul Öncesi</option>
+                  <option value="1">1. Sınıf</option>
+                  <option value="2">2. Sınıf</option>
+                  <option value="3">3. Sınıf</option>
+                  <option value="4">4. Sınıf</option>
+                  <option value="5">5. Sınıf</option>
+                  <option value="6">6. Sınıf</option>
+                  <option value="7">7. Sınıf</option>
+                  <option value="8">8. Sınıf</option>
+                </optgroup>
+                <optgroup label="── Lise ──">
+                  <option value="9">9. Sınıf</option>
+                  <option value="10">10. Sınıf</option>
+                  <option value="11">11. Sınıf</option>
+                  <option value="12">12. Sınıf</option>
+                </optgroup>
+                <optgroup label="── Sınav ──">
+                  <option value="tyt">TYT</option>
+                  <option value="ayt">AYT</option>
+                  <option value="tyt_ayt">TYT + AYT</option>
+                  <option value="kpss">KPSS</option>
+                </optgroup>
               </select>
             </div>
 

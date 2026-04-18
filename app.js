@@ -291,8 +291,11 @@ function adminEditBook(id) {
   switchAdminTab('add');
   $('f-title').value = book.title;
   $('f-publisher').value = book.publisher;
-  $('f-grade').value = book.grade;
   $('f-type').value = book.type;
+  // Sınıf alanını tipe göre göster/gizle
+  const isOkuma = book.type === 'okuma';
+  $('grade-field').style.display = isOkuma ? 'none' : '';
+  $('f-grade').value = isOkuma ? '' : (book.grade || '');
   $('f-pages').value = book.pages || '';
   $('f-link').value = book.link || '';
   $('f-desc').value = book.description || '';
@@ -364,8 +367,12 @@ function setupAdminForm() {
     const desc = $('f-desc').value.trim();
     const featured = $('f-featured').checked;
 
-    if (!title || !publisher || !grade || !type) {
+    const isOkuma = type === 'okuma';
+    if (!title || !publisher || !type) {
       toast('Lütfen zorunlu alanları doldurun!', 'danger'); return;
+    }
+    if (!isOkuma && !grade) {
+      toast('Lütfen sınıf seçin!', 'danger'); return;
     }
 
     const imgVal = window._imgData;
@@ -393,6 +400,15 @@ function setupAdminForm() {
   });
 
   $('btn-reset-form').addEventListener('click', resetAdminForm);
+
+  // Okuma kitabı seçilince sınıf alanını gizle
+  function toggleGradeField() {
+    const isOkuma = $('f-type').value === 'okuma';
+    const gradeField = $('grade-field');
+    gradeField.style.display = isOkuma ? 'none' : '';
+    if (isOkuma) $('f-grade').value = '';
+  }
+  $('f-type').addEventListener('change', toggleGradeField);
 }
 
 // ====================== SEARCH SETUP ======================

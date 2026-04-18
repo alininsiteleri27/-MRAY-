@@ -312,6 +312,13 @@ function adminEditBook(id) {
   $('form-title-label').textContent = '✏️ Kitabı Düzenle';
   $('btn-submit-form').textContent = 'Güncelle';
 }
+const AUTO_DESC = `Şahikali Sitesi'nde öğrenciler için harika bir fırsat var! 📚
+Tüm kitap PDF'leri, öğrencilerin başarıya ulaşmasına katkı sağlamak amacıyla tamamen ücretsiz olarak paylaşılıyor.
+
+Kurucu Reisza, eğitime destek olmaktan asla geri durmuyor ve her gün yeni testler, okuma materyalleri ve ders anlatım kitapları ekleyerek içerikleri sürekli güncel tutuyor.
+
+Başarıya giden yolda sen de yerini al, Şahikali ile öğrenmeyi kolaylaştır! 🚀`;
+
 function resetAdminForm() {
   $('book-form').reset();
   state.editingId = null;
@@ -322,6 +329,8 @@ function resetAdminForm() {
   $('img-name').textContent = '';
   window._pdfData = null;
   window._imgData = null;
+  // Yeni kitap eklerken açıklama alanını otomatik doldur
+  if ($('f-desc')) $('f-desc').value = AUTO_DESC;
 }
 
 // ====================== ADMIN FORM ======================
@@ -514,3 +523,11 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Expose globals
+window.openModal = openModal;
+window.closeModal = closeModal;
+window.openAdmin = openAdmin;
+window.closeAdmin = closeAdmin;
+window.adminDeleteBook = adminDeleteBook;
+window.adminEditBook = adminEditBook;
+window.adminToggleFeatured = adminToggleFeatured;
+window.switchAdminTab = switchAdminTab;

@@ -91,6 +91,11 @@ function showPage(name) {
   const nbtn = $(`nav-${name === 'books' ? 'books' : name === 'featured' ? 'featured' : name === 'search' ? 'search-page' : 'home'}`);
   if (nbtn) nbtn.classList.add('active');
 
+  // update bottom nav buttons
+  $$('.bnav-btn').forEach(b => b.classList.remove('active'));
+  const bnav = $(`bnav-${name === 'books' ? 'books' : name === 'featured' ? 'featured' : name === 'search' ? 'search-page' : 'home'}`);
+  if (bnav) bnav.classList.add('active');
+
   // re-render on switch
   if (name === 'featured') renderFeatured();
   if (name === 'books') renderBooks();

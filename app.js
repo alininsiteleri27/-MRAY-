@@ -55,6 +55,14 @@ let state = {
 
 const TYPE_LABELS = { test: 'Test Kitabı', okuma: 'Okuma Kitabı', ders_anlat: 'Ders Anlatımı', ders: 'Ders Kitabı', deneme: 'Deneme Testi' };
 const TYPE_COLORS = { test: '1', okuma: '2', ders_anlat: '3', ders: '4', deneme: '5' };
+const GRADE_LABELS = {
+  okul_oncesi: 'Okul Öncesi',
+  tyt: 'TYT', ayt: 'AYT', tyt_ayt: 'TYT + AYT', kpss: 'KPSS'
+};
+function gradeLabel(grade) {
+  if (!grade) return '—';
+  return GRADE_LABELS[grade] || (grade + '. Sınıf');
+}
 
 // ====================== DOM ======================
 const $ = id => document.getElementById(id);
@@ -122,7 +130,7 @@ function makeBookCard(book, delay = 0) {
     <div class="book-info">
       <div class="book-title">${book.title}</div>
       <div class="book-meta">
-        <span class="meta-tag grade-color-${col}">${book.grade}. Sınıf</span>
+        <span class="meta-tag grade-color-${col}">${gradeLabel(book.grade)}</span>
         <span class="meta-tag">${book.publisher}</span>
       </div>
       <div class="book-stat">📄 ${book.pages || '?'} sayfa</div>
@@ -213,7 +221,7 @@ function openModal(id) {
   $('modal-title').textContent = book.title;
   $('modal-img').src = img;
   $('modal-type').textContent = TYPE_LABELS[book.type] || book.type;
-  $('modal-grade').textContent = book.grade + '. Sınıf';
+  $('modal-grade').textContent = gradeLabel(book.grade);
   $('modal-publisher').textContent = book.publisher;
   $('modal-pages').textContent = (book.pages || '?') + ' Sayfa';
   $('modal-desc').textContent = book.description || 'Açıklama bulunmuyor.';
@@ -262,7 +270,7 @@ function renderAdminBooks() {
       <img class="admin-book-thumb" src="${img}" alt="${b.title}" onerror="this.src='https://placehold.co/52x70/0d0d12/6366f1?text=📚'"/>
       <div class="admin-book-details">
         <div class="admin-book-name">${b.title}</div>
-        <div class="admin-book-sub">${b.grade}. Sınıf · ${b.publisher} · ${TYPE_LABELS[b.type] || b.type}</div>
+        <div class="admin-book-sub">${gradeLabel(b.grade)} · ${b.publisher} · ${TYPE_LABELS[b.type] || b.type}</div>
       </div>
       <div class="admin-book-actions">
         <button class="btn-icon featured ${b.featured ? 'active' : ''}" title="Öne Çıkar" onclick="adminToggleFeatured('${b.id}')">⭐</button>
@@ -506,11 +514,3 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Expose globals
-window.openModal = openModal;
-window.closeModal = closeModal;
-window.openAdmin = openAdmin;
-window.closeAdmin = closeAdmin;
-window.adminDeleteBook = adminDeleteBook;
-window.adminEditBook = adminEditBook;
-window.adminToggleFeatured = adminToggleFeatured;
-window.switchAdminTab = switchAdminTab;

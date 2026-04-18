@@ -4,7 +4,17 @@ const DB = {
     try { return JSON.parse(localStorage.getItem('bookplatform_books') || '[]'); }
     catch { return []; }
   },
-  save(books) { localStorage.setItem('bookplatform_books', JSON.stringify(books)); },
+  save(books) {
+    try {
+      localStorage.setItem('bookplatform_books', JSON.stringify(books));
+    } catch (e) {
+      if (e.name === 'QuotaExceededError' || e.code === 22) {
+        toast('⚠️ Depolama alanı doldu! Büyük resim/PDF yerine link kullanın.', 'danger');
+      } else {
+        toast('Kayıt hatası: ' + e.message, 'danger');
+      }
+    }
+  },
   add(book) {
     const books = this.get();
     book.id = Date.now().toString(36) + Math.random().toString(36).slice(2);
@@ -310,22 +320,37 @@ function setupAdminForm() {
 
   $('f-pdf').addEventListener('change', e => {
     const file = e.target.files[0]; if (!file) return;
-    $('pdf-name').textContent = file.name;
-    const r = new FileReader();
-    r.onload = ev => { window._pdfData = ev.target.result; };
-    r.readAsDataURL(file);
+    // PDF base64 localStorage'a sığmaz — sadece adını göster, link girilmesini iste
+    $('pdf-name').textContent = '⚠️ PDF yerine aşağıya link girin: ' + file.name;
+    toast('PDF dosyaları çok büyük olduğu için direkt yüklenemez. Lütfen PDF\'i bir sisteme yükleyip linkini girin.', 'danger');
+    window._pdfData = null; // base64 saklamıyoruz
+    e.target.value = '';
   });
 
   $('f-image').addEventListener('change', e => {
     const file = e.target.files[0]; if (!file) return;
     $('img-name').textContent = file.name;
-    const r = new FileReader();
-    r.onload = ev => {
-      window._imgData = ev.target.result;
-      $('img-preview').src = ev.target.result;
+    // Resmi canvas ile sıkıştır (max 400x300, kalite 0.7)
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const MAX_W = 400, MAX_H = 300;
+      let w = img.width, h = img.height;
+      if (w > MAX_W) { h = Math.round(h * MAX_W / w); w = MAX_W; }
+      if (h > MAX_H) { w = Math.round(w * MAX_H / h); h = MAX_H; }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      const compressed = canvas.toDataURL('image/jpeg', 0.72);
+      URL.revokeObjectURL(url);
+      window._imgData = compressed;
+      $('img-preview').src = compressed;
       $('img-preview-wrap').classList.add('show');
+      // Boyut uyarısı
+      const kb = Math.round(compressed.length * 0.75 / 1024);
+      if (kb > 200) toast(`Resim ${kb}KB — çok fazla resim eklenirse depolama dolabilir.`, 'default');
     };
-    r.readAsDataURL(file);
+    img.src = url;
   });
 
   $('book-form').addEventListener('submit', e => {
@@ -343,11 +368,11 @@ function setupAdminForm() {
       toast('Lütfen zorunlu alanları doldurun!', 'danger'); return;
     }
 
-    let imgVal = window._imgData;
-    let imgFallback = `https://placehold.co/400x300/111118/6366f1?text=${encodeURIComponent(title.slice(0,12))}`;
+    const imgVal = window._imgData;
+    const imgFallback = `https://placehold.co/400x300/111118/6366f1?text=${encodeURIComponent(title.slice(0,12))}`;
 
     const bookData = { title, publisher, grade, type, pages, link, description: desc, featured,
-      pdfData: window._pdfData || null,
+      pdfData: null, // PDF base64 saklanmıyor — link kullan
       imageData: imgVal || null,
       image: imgVal ? null : imgFallback
     };

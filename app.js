@@ -471,6 +471,10 @@ function clearCanvas() {
 
 // ── NAV ───────────────────────────────────
 function showSection(id) {
+  if (id === 'admin' && !adminUnlocked) {
+    openKonami();
+    return;
+  }
   document.querySelectorAll('.sec').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   const sec = document.getElementById('sec-' + id);
@@ -484,6 +488,93 @@ function showSection(id) {
   window.scrollTo(0, 0);
 }
 
+// ── KONAMI ────────────────────────────────
+const KONAMI = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','KeyS','KeyA'];
+let konamiProgress = 0;
+let konamiTimer = null;
+let adminUnlocked = false;
+
+function openKonami() {
+  konamiProgress = 0;
+  updateKonamiUI();
+  document.getElementById('konamiHint').textContent = 'Gizli kombinasyonu gir';
+  document.getElementById('konamiHint').style.color = 'var(--text3)';
+  document.getElementById('konamiOverlay').classList.add('open');
+}
+
+function closeKonami() {
+  document.getElementById('konamiOverlay').classList.remove('open');
+  konamiProgress = 0;
+  updateKonamiUI();
+}
+
+function updateKonamiUI() {
+  for (let i = 0; i < 10; i++) {
+    const el = document.getElementById('kk' + i);
+    if (!el) continue;
+    el.classList.remove('active','done');
+    if (i < konamiProgress) el.classList.add('done');
+    else if (i === konamiProgress) el.classList.add('active');
+  }
+}
+
+function handleKonamiKey(e) {
+  if (!document.getElementById('konamiOverlay').classList.contains('open')) return;
+  if (e.code === 'Escape') { closeKonami(); return; }
+  clearTimeout(konamiTimer);
+
+  if (e.code === KONAMI[konamiProgress]) {
+    konamiProgress++;
+    updateKonamiUI();
+    if (konamiProgress === KONAMI.length) {
+      document.getElementById('konamiHint').textContent = '✓ Erişim sağlandı';
+      document.getElementById('konamiHint').style.color = '#5DE89A';
+      adminUnlocked = true;
+      document.getElementById('adminIndicator').style.display = '';
+      setTimeout(() => { closeKonami(); showSection('admin'); }, 700);
+    } else {
+      konamiTimer = setTimeout(() => {
+        konamiProgress = 0; updateKonamiUI();
+        document.getElementById('konamiHint').textContent = 'Süre doldu, tekrar dene';
+        document.getElementById('konamiHint').style.color = 'var(--accent)';
+        setTimeout(() => {
+          document.getElementById('konamiHint').textContent = 'Gizli kombinasyonu gir';
+          document.getElementById('konamiHint').style.color = 'var(--text3)';
+        }, 1200);
+      }, 3000);
+    }
+  } else {
+    konamiProgress = 0; updateKonamiUI();
+    document.getElementById('konamiHint').textContent = 'Yanlış tuş! Baştan başla';
+    document.getElementById('konamiHint').style.color = 'var(--accent)';
+    setTimeout(() => {
+      document.getElementById('konamiHint').textContent = 'Gizli kombinasyonu gir';
+      document.getElementById('konamiHint').style.color = 'var(--text3)';
+    }, 1000);
+  }
+}
+
+// Logo'ya 5x hızlı tıklama → mobil erişim
+let logoTaps = 0; let logoTapTimer = null;
+function handleLogoTap() {
+  logoTaps++;
+  clearTimeout(logoTapTimer);
+  logoTapTimer = setTimeout(() => { logoTaps = 0; }, 1500);
+  if (logoTaps >= 5) { logoTaps = 0; openKonami(); }
+}
+
+// Klavye dinleyici
+window.addEventListener('keydown', handleKonamiKey);
+
+// showSection guard — admin'e doğrudan erişimi engelle
+const _originalShowSection = showSection;
+
 // ── START ─────────────────────────────────
-window.addEventListener('DOMContentLoaded', init);
+window.addEventListener('DOMContentLoaded', () => {
+  init();
+  // Logo tıklama
+  document.querySelector('.logo-mark').style.cursor = 'pointer';
+  document.querySelector('.logo-mark').addEventListener('click', handleLogoTap);
+  document.querySelector('.logo-text').addEventListener('click', handleLogoTap);
+});
 window.addEventListener('resize', resizeCanvas);

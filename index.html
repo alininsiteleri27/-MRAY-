@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <meta name="description" content="Öğrenciler için ücretsiz kitap erişim platformu. Test, okuma, ders anlatımı, ders kitabı ve deneme sınavları."/>
-  <meta name="keywords" content="öğrenci kitap, test kitabı, ders kitabı, deneme sınavı, okuma kitabı, pdf kitap"/>
   <title>ŞAHİKALİ — Öğrenci Kitap Platformu</title>
   <link rel="stylesheet" href="style.css"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -21,15 +20,16 @@
 
 <!-- ==================== NAVBAR ==================== -->
 <nav id="navbar" role="navigation" aria-label="Ana Navigasyon">
-  <a href="#" class="nav-logo" aria-label="ŞAHİKALİ Ana Sayfa">
+  <a href="#" class="nav-logo" onclick="showPage('home');return false;" aria-label="ŞAHİKALİ Ana Sayfa">
     <div class="nav-logo-icon" aria-hidden="true">📚</div>
     <span class="nav-logo-text">ŞAHİKALİ</span>
   </a>
 
   <ul class="nav-links" role="list">
-    <li><a href="#hero" class="active">Ana Sayfa</a></li>
-    <li><a href="#featured">Öne Çıkanlar</a></li>
-    <li><a href="#all-books">Tüm Kitaplar</a></li>
+    <li><button class="nav-btn active" id="nav-home" onclick="showPage('home')">🏠 Ana Sayfa</button></li>
+    <li><button class="nav-btn" id="nav-featured" onclick="showPage('featured')">⭐ Öne Çıkanlar</button></li>
+    <li><button class="nav-btn" id="nav-books" onclick="showPage('books')">📚 Kitaplar</button></li>
+    <li><button class="nav-btn" id="nav-search-page" onclick="showPage('search')">🔍 Arama</button></li>
   </ul>
 
   <div class="nav-search">
@@ -47,24 +47,21 @@
   </button>
 </nav>
 
-<!-- Mobile Nav (hidden by default) -->
-<div id="mobile-nav" style="
-  position:fixed; top:70px; left:0; right:0; z-index:999;
-  background:rgba(6,6,8,0.97); border-bottom:1px solid var(--border);
-  padding:1rem 2rem; display:none; flex-direction:column; gap:8px;
-" class="mobile-nav-inner">
-  <a href="#hero" style="color:var(--text-secondary);text-decoration:none;padding:10px 0;border-bottom:1px solid var(--border)">Ana Sayfa</a>
-  <a href="#featured" style="color:var(--text-secondary);text-decoration:none;padding:10px 0;border-bottom:1px solid var(--border)">Öne Çıkanlar</a>
-  <a href="#all-books" style="color:var(--text-secondary);text-decoration:none;padding:10px 0">Tüm Kitaplar</a>
+<!-- Mobile Drawer -->
+<div id="mobile-nav">
+  <button class="mobile-nav-btn" onclick="showPage('home');closeMobileNav()">🏠 Ana Sayfa</button>
+  <button class="mobile-nav-btn" onclick="showPage('featured');closeMobileNav()">⭐ Öne Çıkanlar</button>
+  <button class="mobile-nav-btn" onclick="showPage('books');closeMobileNav()">📚 Kitaplar</button>
+  <button class="mobile-nav-btn" onclick="showPage('search');closeMobileNav()">🔍 Arama</button>
 </div>
 
-<main>
-  <!-- ==================== HERO ==================== -->
-  <section id="hero" aria-label="Başlık Bölümü">
+<!-- ==================== PAGES WRAPPER ==================== -->
+<main id="app">
+
+  <!-- ======= PAGE: HOME ======= -->
+  <div id="page-home" class="page active" aria-label="Ana Sayfa">
     <div class="hero-content">
-      <div class="hero-badge" role="status">
-        ŞAHİKALİ — Dijital Okul Kütüphanesi
-      </div>
+      <div class="hero-badge" role="status">ŞAHİKALİ — Dijital Okul Kütüphanesi</div>
       <h1 class="hero-title">
         Her Kitap<br/>
         <span class="gradient-text">Bir Tık Uzağında</span>
@@ -74,12 +71,15 @@
         Sınıfına ve yayınevine göre filtrele, PDF'ini aç — ücretsiz.
       </p>
       <div class="hero-cta">
-        <a href="#all-books" class="btn-primary" id="hero-browse-btn">
+        <button class="btn-primary" onclick="showPage('books')" id="hero-browse-btn">
           📚 Kitaplara Göz At
-        </a>
-        <a href="#featured" class="btn-secondary" id="hero-featured-btn">
+        </button>
+        <button class="btn-secondary" onclick="showPage('featured')" id="hero-featured-btn">
           ⭐ Öne Çıkanlar
-        </a>
+        </button>
+        <button class="btn-secondary" onclick="showPage('search')" id="hero-search-btn">
+          🔍 Kitap Ara
+        </button>
       </div>
       <div class="hero-stats" aria-label="Platform İstatistikleri">
         <div class="stat-item">
@@ -100,34 +100,86 @@
         </div>
       </div>
     </div>
-  </section>
 
-  <!-- GLOW DIVIDER -->
-  <div class="glow-line" aria-hidden="true"></div>
+    <!-- QUICK CATEGORY CARDS -->
+    <div class="quick-cats">
+      <button class="quick-cat-card" onclick="goToCategory('test')">
+        <span class="qcat-icon">📝</span>
+        <span class="qcat-label">Test Kitabı</span>
+      </button>
+      <button class="quick-cat-card" onclick="goToCategory('okuma')">
+        <span class="qcat-icon">📖</span>
+        <span class="qcat-label">Okuma Kitabı</span>
+      </button>
+      <button class="quick-cat-card" onclick="goToCategory('ders_anlat')">
+        <span class="qcat-icon">🎓</span>
+        <span class="qcat-label">Ders Anlatımı</span>
+      </button>
+      <button class="quick-cat-card" onclick="goToCategory('ders')">
+        <span class="qcat-icon">📚</span>
+        <span class="qcat-label">Ders Kitabı</span>
+      </button>
+      <button class="quick-cat-card" onclick="goToCategory('deneme')">
+        <span class="qcat-icon">⏱</span>
+        <span class="qcat-label">Deneme Testi</span>
+      </button>
+    </div>
+  </div>
 
-  <!-- ==================== FEATURED ==================== -->
-  <section id="featured" aria-label="Öne Çıkan Kitaplar">
-    <div class="container">
+  <!-- ======= PAGE: FEATURED ======= -->
+  <div id="page-featured" class="page" aria-label="Öne Çıkan Kitaplar">
+    <div class="page-inner">
       <div class="section-header">
         <div class="section-tag">✨ Editörün Seçimi</div>
         <h2 class="section-title">Öne Çıkan Kitaplar</h2>
         <p class="section-subtitle">Adminlerimiz tarafından öne çıkarılan, en çok tercih edilen kitaplar.</p>
       </div>
-      <div class="featured-carousel" id="featured-carousel" role="list" aria-label="Öne çıkan kitaplar karuseli">
+      <div id="featured-carousel" class="books-grid" role="list" aria-label="Öne çıkan kitaplar">
         <!-- Rendered by JS -->
       </div>
     </div>
-  </section>
+  </div>
 
-  <div class="section-divider" aria-hidden="true"></div>
-
-  <!-- ==================== ALL BOOKS ==================== -->
-  <section id="all-books" aria-label="Tüm Kitaplar">
-    <div class="container">
+  <!-- ======= PAGE: ALL BOOKS ======= -->
+  <div id="page-books" class="page" aria-label="Tüm Kitaplar">
+    <div class="page-inner">
       <div class="section-header">
         <div class="section-tag">📚 Kütüphane</div>
         <h2 class="section-title">Tüm Kitaplar</h2>
-        <p class="section-subtitle">Kategori, sınıf veya yayınevine göre filtrele; istediğin kitabı bul.</p>
+        <p class="section-subtitle">Kategoriye göre filtrele, istediğin kitabı bul.</p>
+      </div>
+
+      <!-- CATEGORY FILTER -->
+      <div class="category-bar" role="group" aria-label="Kategori Filtresi">
+        <button class="cat-btn active" data-cat="all" id="cat-all">🌐 Tümü</button>
+        <button class="cat-btn" data-cat="test" id="cat-test">📝 Test Kitabı</button>
+        <button class="cat-btn" data-cat="okuma" id="cat-okuma">📖 Okuma Kitabı</button>
+        <button class="cat-btn" data-cat="ders_anlat" id="cat-ders_anlat">🎓 Ders Anlatımı</button>
+        <button class="cat-btn" data-cat="ders" id="cat-ders">📚 Ders Kitabı</button>
+        <button class="cat-btn" data-cat="deneme" id="cat-deneme">⏱ Deneme Testi</button>
+      </div>
+
+      <!-- NO RESULTS -->
+      <div id="no-results" class="empty-state" style="display:none" aria-live="polite">
+        <div class="empty-state-icon">🔍</div>
+        <h3>Kitap Bulunamadı</h3>
+        <p>Bu kategoride henüz kitap yok.</p>
+      </div>
+
+      <!-- BOOKS GRID -->
+      <div id="books-grid" class="books-grid" role="list" aria-label="Kitap listesi">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ======= PAGE: SEARCH ======= -->
+  <div id="page-search" class="page" aria-label="Kitap Arama">
+    <div class="page-inner">
+      <div class="section-header">
+        <div class="section-tag">🔍 Arama</div>
+        <h2 class="section-title">Kitap Ara</h2>
+        <p class="section-subtitle">İsim, yayınevi veya sınıfa göre arayın.</p>
       </div>
 
       <!-- SEARCH BAR -->
@@ -136,8 +188,9 @@
           id="search-input"
           class="search-input"
           type="search"
-          placeholder="🔍 Kitap adı, yayınevi veya sınıf ara..."
+          placeholder="🔍 Kitap adı, yayınevi ara..."
           aria-label="Kitap adı ara"
+          autofocus
         />
         <select id="filter-grade" class="search-select" aria-label="Sınıf filtrele">
           <option value="">🎓 Tüm Sınıflar</option>
@@ -164,59 +217,25 @@
         />
       </div>
 
-      <!-- CATEGORY FILTER -->
-      <div class="category-bar" role="group" aria-label="Kategori Filtresi">
-        <button class="cat-btn active" data-cat="all" id="cat-all">🌐 Tümü</button>
-        <button class="cat-btn" data-cat="test" id="cat-test">📝 Test Kitabı</button>
-        <button class="cat-btn" data-cat="okuma" id="cat-okuma">📖 Okuma Kitabı</button>
-        <button class="cat-btn" data-cat="ders_anlat" id="cat-ders_anlat">🎓 Ders Anlatımı</button>
-        <button class="cat-btn" data-cat="ders" id="cat-ders">📚 Ders Kitabı</button>
-        <button class="cat-btn" data-cat="deneme" id="cat-deneme">⏱ Deneme Testi</button>
-      </div>
-
       <!-- NO RESULTS -->
-      <div id="no-results" class="empty-state" style="display:none" aria-live="polite">
+      <div id="no-results-search" class="empty-state" style="display:none" aria-live="polite">
         <div class="empty-state-icon">🔍</div>
         <h3>Kitap Bulunamadı</h3>
         <p>Arama kriterlerinize uygun kitap yok. Farklı bir kelime deneyin.</p>
       </div>
+      <div id="search-empty-hint" class="empty-state">
+        <div class="empty-state-icon" style="opacity:0.3">🔎</div>
+        <p style="color:var(--text-muted)">Aramak istediğiniz kitabı yazmaya başlayın...</p>
+      </div>
 
-      <!-- BOOKS GRID -->
-      <div id="books-grid" class="books-grid" role="list" aria-label="Kitap listesi">
+      <!-- SEARCH RESULTS GRID -->
+      <div id="search-grid" class="books-grid" role="list" aria-label="Arama sonuçları">
         <!-- Rendered by JS -->
       </div>
     </div>
-  </section>
-
-  <!-- STATS ROW -->
-  <div class="stats-section" aria-label="Platform Özeti">
-    <div class="stats-grid">
-      <div class="stat-box">
-        <div class="stat-box-number" id="footer-stat-total">—</div>
-        <div class="stat-box-label">Toplam Kitap</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-box-number">5</div>
-        <div class="stat-box-label">Kategori</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-box-number">12</div>
-        <div class="stat-box-label">Sınıf Seviyesi</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-box-number">∞</div>
-        <div class="stat-box-label">Ücretsiz Erişim</div>
-      </div>
-    </div>
   </div>
-</main>
 
-<!-- ==================== FOOTER ==================== -->
-<footer role="contentinfo">
-  <div class="footer-logo" aria-label="ŞAHİKALİ">📚 ŞAHİKALİ</div>
-  <p>ŞAHİKALİ — Tüm öğrenciler için ücretsiz dijital kütüphane platformu.</p>
-  <p style="margin-top:8px;font-size:0.75rem;opacity:0.5;">© 2026 ŞAHİKALİ. Tüm hakları saklıdır.</p>
-</footer>
+</main>
 
 <!-- ==================== BOOK MODAL ==================== -->
 <div id="modal-overlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
@@ -269,52 +288,41 @@
   </div>
 
   <div class="admin-content">
-    <!-- TABS -->
-    <div class="admin-tabs" role="tablist" aria-label="Admin Bölümleri">
-      <button class="admin-tab active" data-tab="add" role="tab" aria-selected="true" id="tab-add">➕ Kitap Ekle</button>
-      <button class="admin-tab" data-tab="list" role="tab" aria-selected="false" id="tab-list">📋 Kitapları Yönet</button>
+    <div class="admin-tabs" role="tablist">
+      <button class="admin-tab active" data-tab="add" role="tab" id="tab-add">➕ Kitap Ekle</button>
+      <button class="admin-tab" data-tab="list" role="tab" id="tab-list">📋 Kitapları Yönet</button>
     </div>
 
-    <!-- ======= ADD / EDIT SECTION ======= -->
-    <div id="section-add" class="admin-section active" role="tabpanel" aria-labelledby="tab-add">
+    <!-- ADD/EDIT -->
+    <div id="section-add" class="admin-section active" role="tabpanel">
       <div class="form-card">
         <h3 id="form-title-label">➕ Yeni Kitap Ekle</h3>
         <form id="book-form" novalidate>
           <div class="form-grid">
 
-            <!-- Kitap Adı -->
             <div class="form-group full">
               <label class="form-label" for="f-title">📖 Kitap Adı *</label>
               <input id="f-title" class="form-input" type="text" placeholder="Örn: Matematik Soru Bankası 9. Sınıf" required/>
             </div>
 
-            <!-- Yayınevi -->
             <div class="form-group">
               <label class="form-label" for="f-publisher">🏢 Yayınevi *</label>
               <input id="f-publisher" class="form-input" type="text" placeholder="Örn: Palme, MEB, Benim Hocam" required/>
             </div>
 
-            <!-- Sınıf -->
             <div class="form-group">
               <label class="form-label" for="f-grade">🎓 Sınıf *</label>
               <select id="f-grade" class="form-select" required>
                 <option value="">Sınıf Seçin</option>
-                <option value="1">1. Sınıf</option>
-                <option value="2">2. Sınıf</option>
-                <option value="3">3. Sınıf</option>
-                <option value="4">4. Sınıf</option>
-                <option value="5">5. Sınıf</option>
-                <option value="6">6. Sınıf</option>
-                <option value="7">7. Sınıf</option>
-                <option value="8">8. Sınıf</option>
-                <option value="9">9. Sınıf</option>
-                <option value="10">10. Sınıf</option>
-                <option value="11">11. Sınıf</option>
-                <option value="12">12. Sınıf</option>
+                <option value="1">1. Sınıf</option><option value="2">2. Sınıf</option>
+                <option value="3">3. Sınıf</option><option value="4">4. Sınıf</option>
+                <option value="5">5. Sınıf</option><option value="6">6. Sınıf</option>
+                <option value="7">7. Sınıf</option><option value="8">8. Sınıf</option>
+                <option value="9">9. Sınıf</option><option value="10">10. Sınıf</option>
+                <option value="11">11. Sınıf</option><option value="12">12. Sınıf</option>
               </select>
             </div>
 
-            <!-- Kitap Türü -->
             <div class="form-group">
               <label class="form-label" for="f-type">📂 Kitap Türü *</label>
               <select id="f-type" class="form-select" required>
@@ -327,64 +335,54 @@
               </select>
             </div>
 
-            <!-- Sayfa Sayısı -->
             <div class="form-group">
               <label class="form-label" for="f-pages">📄 Sayfa Sayısı</label>
               <input id="f-pages" class="form-input" type="number" placeholder="Örn: 320" min="1"/>
             </div>
 
-            <!-- Link -->
             <div class="form-group full">
               <label class="form-label" for="f-link">🔗 Kitap Bağlantı Linki</label>
-              <input id="f-link" class="form-input" type="url" placeholder="https://... (PDF linki veya web sayfası)"/>
+              <input id="f-link" class="form-input" type="url" placeholder="https://..."/>
               <span class="form-hint">PDF dosyası yüklüyorsanız bu alanı boş bırakın.</span>
             </div>
 
-            <!-- PDF Upload -->
             <div class="form-group">
               <label class="form-label" for="f-pdf">📁 PDF Dosyası Yükle</label>
-              <div class="file-upload" onclick="document.getElementById('f-pdf').click()" role="button" tabindex="0"
-                onkeydown="if(event.key==='Enter')document.getElementById('f-pdf').click()">
+              <div class="file-upload" onclick="document.getElementById('f-pdf').click()" role="button" tabindex="0">
                 <div class="file-upload-icon">📄</div>
                 <p>Tıkla ve <span>PDF seç</span></p>
                 <p id="pdf-name" style="color:var(--success);font-size:0.8rem;margin-top:4px"></p>
               </div>
-              <input id="f-pdf" type="file" accept=".pdf" style="display:none" aria-label="PDF dosyası seç"/>
+              <input id="f-pdf" type="file" accept=".pdf" style="display:none"/>
             </div>
 
-            <!-- Image Upload -->
             <div class="form-group">
               <label class="form-label" for="f-image">🖼️ Kitap Kapağı</label>
-              <div class="file-upload" onclick="document.getElementById('f-image').click()" role="button" tabindex="0"
-                onkeydown="if(event.key==='Enter')document.getElementById('f-image').click()">
+              <div class="file-upload" onclick="document.getElementById('f-image').click()" role="button" tabindex="0">
                 <div class="file-upload-icon">🖼️</div>
                 <p>Tıkla ve <span>resim seç</span></p>
                 <p id="img-name" style="color:var(--success);font-size:0.8rem;margin-top:4px"></p>
               </div>
-              <input id="f-image" type="file" accept="image/*" style="display:none" aria-label="Kapak resmi seç"/>
+              <input id="f-image" type="file" accept="image/*" style="display:none"/>
               <div class="img-preview-wrap" id="img-preview-wrap">
                 <img id="img-preview" src="" alt="Kapak Önizleme"/>
               </div>
             </div>
 
-            <!-- Açıklama -->
             <div class="form-group full">
               <label class="form-label" for="f-desc">📝 Kitap Açıklaması</label>
               <textarea id="f-desc" class="form-textarea" placeholder="Kitap hakkında kısa bir açıklama yazın..."></textarea>
             </div>
 
-            <!-- Öne Çıkar -->
             <div class="form-group full" style="flex-direction:row;align-items:center;gap:12px;background:var(--bg-glass);border:1px solid var(--border);border-radius:12px;padding:14px 16px">
               <input id="f-featured" type="checkbox" style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer"/>
               <div>
                 <label for="f-featured" style="font-weight:600;color:var(--text-primary);cursor:pointer">⭐ Öne Çıkar</label>
-                <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">Bu kitap ana sayfada öne çıkan bölümünde gösterilir.</div>
+                <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">Ana sayfada öne çıkan bölümünde gösterilir.</div>
               </div>
             </div>
 
           </div>
-
-          <!-- ACTIONS -->
           <div style="display:flex;gap:12px;margin-top:20px">
             <button type="submit" class="btn-submit" id="btn-submit-form" style="margin-top:0">Kitabı Ekle</button>
             <button type="button" id="btn-reset-form" class="btn-secondary" style="border-radius:12px;padding:14px 24px;font-size:1rem;font-weight:700;cursor:pointer">↩ Sıfırla</button>
@@ -393,51 +391,32 @@
       </div>
     </div>
 
-    <!-- ======= LIST SECTION ======= -->
-    <div id="section-list" class="admin-section" role="tabpanel" aria-labelledby="tab-list">
+    <!-- LIST -->
+    <div id="section-list" class="admin-section" role="tabpanel">
       <div class="form-card">
         <h3>📋 Kitapları Yönet</h3>
-        <div id="admin-books-list" aria-live="polite">
-          <!-- Rendered by JS -->
-        </div>
+        <div id="admin-books-list" aria-live="polite"></div>
       </div>
     </div>
-
   </div>
 </div>
 
-<!-- ==================== TOAST ==================== -->
+<!-- TOAST -->
 <div id="toast" aria-live="assertive" aria-atomic="true"></div>
 
-<!-- ==================== SCRIPTS ==================== -->
 <script src="app.js"></script>
-
-<!-- Mobile nav toggle script (inline for speed) -->
 <script>
-  (function(){
-    const hb = document.getElementById('hamburger');
+  // Mobile nav
+  function closeMobileNav() {
+    document.getElementById('mobile-nav').classList.remove('open');
+    document.getElementById('hamburger').setAttribute('aria-expanded','false');
+  }
+  document.getElementById('hamburger').addEventListener('click', function(){
     const mn = document.getElementById('mobile-nav');
-    if(!hb||!mn) return;
-    hb.addEventListener('click', function(){
-      const open = mn.style.display === 'flex';
-      mn.style.display = open ? 'none' : 'flex';
-      hb.setAttribute('aria-expanded', String(!open));
-    });
-    // Close on link click
-    mn.querySelectorAll('a').forEach(a => {
-      a.addEventListener('click', () => { mn.style.display='none'; hb.setAttribute('aria-expanded','false'); });
-    });
-    // Footer stat sync
-    setInterval(() => {
-      try {
-        const books = JSON.parse(localStorage.getItem('bookplatform_books')||'[]');
-        const el = document.getElementById('footer-stat-total');
-        if(el) el.textContent = books.length;
-        document.title = 'ŞAHİKALİ — Öğrenci Kitap Platformu';
-      } catch{}
-    }, 2000);
-  })();
+    const open = mn.classList.contains('open');
+    mn.classList.toggle('open');
+    this.setAttribute('aria-expanded', String(!open));
+  });
 </script>
-
 </body>
 </html>

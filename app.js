@@ -63,13 +63,26 @@ function showLoading() {
 
 // ── RENDER HELPERS ──
 function filterBooks() {
+  const EXAM_CATS = ["tyt","ayt","tyt-ayt","kpss"];
   return allBooks.filter(b => {
     const q = currentFilter.search.toLowerCase();
     const matchSearch = !q ||
       (b.title || "").toLowerCase().includes(q) ||
       (b.publisher || "").toLowerCase().includes(q) ||
       (b.subject || "").toLowerCase().includes(q);
-    const matchCat = !currentFilter.cat || b.category === currentFilter.cat;
+
+    // Sidebar filtresi: sınav kategorisi mi yoksa kitap türü mü?
+    let matchCat = true;
+    if (currentFilter.cat) {
+      if (EXAM_CATS.includes(currentFilter.cat)) {
+        // Sınav kategorisine göre filtrele
+        matchCat = b.examCat === currentFilter.cat;
+      } else {
+        // Kitap türüne göre filtrele
+        matchCat = b.bookType === currentFilter.cat || b.category === currentFilter.cat;
+      }
+    }
+
     const matchGrade = !currentFilter.grade || String(b.grade) === String(currentFilter.grade);
     const matchSub = !currentFilter.subject || b.subject === currentFilter.subject;
     return matchSearch && matchCat && matchGrade && matchSub;
@@ -183,6 +196,54 @@ window.deleteBook = function(id, event) {
   booksRef.child(id).remove();
 };
 
+// ── UPLOAD FORM TÜR / SINAV / SINIF MANTIĞI ──
+
+// Hikaye ve ansiklopedide sınıf/ders sorulmaz
+const NO_GRADE_TYPES = ["hikaye", "ansiklopedi"];
+// Sadece ders türlerinde sınav kategorisi sorulur
+const EXAM_TYPES = ["ders-kitabi", "ders-anlatim", "soru-bankasi", "deneme", "foy"];
+
+let selectedBookType = "";
+let selectedExamCat = "";
+
+document.querySelectorAll(".type-btn[data-type]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".type-btn[data-type]").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    selectedBookType = btn.dataset.type;
+    document.getElementById("uBookType").value = selectedBookType;
+    updateUploadFormVisibility();
+  });
+});
+
+document.querySelectorAll(".exam-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".exam-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    selectedExamCat = btn.dataset.exam;
+    document.getElementById("uExamCat").value = selectedExamCat;
+  });
+});
+
+function updateUploadFormVisibility() {
+  const isNoGrade = NO_GRADE_TYPES.includes(selectedBookType);
+  const isExamType = EXAM_TYPES.includes(selectedBookType);
+
+  // Sınıf ve ders göster/gizle
+  document.getElementById("uGradeGroup").classList.toggle("hidden", isNoGrade);
+  document.getElementById("uSubjectGroup").classList.toggle("hidden", isNoGrade);
+
+  // Sınav kategorisi göster/gizle
+  document.getElementById("uExamGroup").classList.toggle("hidden", !isExamType);
+
+  // Eğer sınav tipi değilse sınav seçimini sıfırla
+  if (!isExamType) {
+    selectedExamCat = "";
+    document.getElementById("uExamCat").value = "";
+    document.querySelectorAll(".exam-btn").forEach(b => b.classList.remove("active"));
+  }
+}
+
 // ── COVER FILE UPLOAD UI (Base64 → Firebase) ──
 let selectedCoverBase64 = "";
 
@@ -268,16 +329,17 @@ function clearCoverFile() {
 // ── UPLOAD BOOK ──
 document.getElementById("uploadBookBtn").addEventListener("click", async () => {
   const title = document.getElementById("uTitle").value.trim();
-  const grade = document.getElementById("uGrade").value;
-  const category = document.getElementById("uCategory").value;
-  const subject = document.getElementById("uSubject").value;
+  const bookType = document.getElementById("uBookType").value;
+  const examCat = document.getElementById("uExamCat").value;
+  const grade = document.getElementById("uGrade") ? document.getElementById("uGrade").value : "";
+  const subject = document.getElementById("uSubject") ? document.getElementById("uSubject").value : "";
   const publisher = document.getElementById("uPublisher").value.trim();
   const link = document.getElementById("uLink").value.trim();
   const featured = document.getElementById("uFeatured").value === "true";
   const errEl = document.getElementById("uploadError");
 
   if (!title) { showUploadError("Kitap adı zorunludur."); return; }
-  if (!category) { showUploadError("Kategori seçmelisiniz."); return; }
+  if (!bookType) { showUploadError("Kitap türü seçmelisiniz."); return; }
   if (!link) { showUploadError("İndirme linki zorunludur."); return; }
 
   errEl.classList.add("hidden");
@@ -286,11 +348,21 @@ document.getElementById("uploadBookBtn").addEventListener("click", async () => {
   btn.textContent = "Kaydediliyor…";
   btn.disabled = true;
 
+  // Kategori: önce sınav kategorisi, yoksa kitap türü
+  const category = examCat || bookType;
+
   try {
     await booksRef.push({
-      title, grade, category, subject, publisher,
+      title,
+      bookType,       // ders-kitabi, soru-bankasi, hikaye ...
+      examCat,        // tyt, ayt, kpss, "" ...
+      category,       // filtreleme için birleşik
+      grade: NO_GRADE_TYPES.includes(bookType) ? "" : grade,
+      subject: NO_GRADE_TYPES.includes(bookType) ? "" : subject,
+      publisher,
       cover: selectedCoverBase64,
-      link, featured,
+      link,
+      featured,
       createdAt: Date.now()
     });
     closeModal("uploadModal");
@@ -311,11 +383,20 @@ function showUploadError(msg) {
 }
 
 function clearUploadForm() {
-  ["uTitle","uGrade","uCategory","uSubject","uPublisher","uLink"].forEach(id => {
-    document.getElementById(id).value = "";
+  ["uTitle","uGrade","uSubject","uPublisher","uLink"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
   });
   document.getElementById("uFeatured").value = "false";
+  document.getElementById("uBookType").value = "";
+  document.getElementById("uExamCat").value = "";
   document.getElementById("uploadError").classList.add("hidden");
+  document.querySelectorAll(".type-btn").forEach(b => b.classList.remove("active"));
+  document.getElementById("uGradeGroup").classList.add("hidden");
+  document.getElementById("uSubjectGroup").classList.add("hidden");
+  document.getElementById("uExamGroup").classList.add("hidden");
+  selectedBookType = "";
+  selectedExamCat = "";
   clearCoverFile();
 }
 

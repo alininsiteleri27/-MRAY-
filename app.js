@@ -183,14 +183,8 @@ window.deleteBook = function(id, event) {
   booksRef.child(id).remove();
 };
 
-// ── CLOUDINARY CONFIG ──
-const CLOUDINARY_CLOUD = "ddeisebyz";
-const CLOUDINARY_PRESET = "Root";
-const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`;
-
-// ── COVER FILE UPLOAD UI ──
-let selectedCoverFile = null;
-let uploadedCoverUrl = "";
+// ── COVER FILE UPLOAD UI (Base64 → Firebase) ──
+let selectedCoverBase64 = "";
 
 const coverDropZone = document.getElementById("coverDropZone");
 const coverFileInput = document.getElementById("uCoverFile");
@@ -228,61 +222,47 @@ document.getElementById("coverRemoveBtn").addEventListener("click", e => {
 });
 
 function setCoverFile(file) {
-  selectedCoverFile = file;
-  uploadedCoverUrl = "";
+  // Resmi sıkıştır ve Base64'e çevir
+  coverProgress.classList.remove("hidden");
+  coverProgressBar.style.width = "30%";
+  coverProgressText.textContent = "Resim işleniyor…";
+
   const reader = new FileReader();
   reader.onload = ev => {
-    coverPreviewImg.src = ev.target.result;
-    coverPreviewWrap.style.display = "flex";
-    coverPlaceholder.style.display = "none";
+    const img = new Image();
+    img.onload = () => {
+      // Canvas ile yeniden boyutlandır (max 400x550)
+      const canvas = document.createElement("canvas");
+      const MAX_W = 400, MAX_H = 550;
+      let w = img.width, h = img.height;
+      if (w > MAX_W || h > MAX_H) {
+        const ratio = Math.min(MAX_W / w, MAX_H / h);
+        w = Math.round(w * ratio);
+        h = Math.round(h * ratio);
+      }
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, w, h);
+      const base64 = canvas.toDataURL("image/jpeg", 0.75);
+      selectedCoverBase64 = base64;
+
+      coverPreviewImg.src = base64;
+      coverPreviewWrap.style.display = "flex";
+      coverPlaceholder.style.display = "none";
+      coverProgress.classList.add("hidden");
+      coverProgressBar.style.width = "0%";
+    };
+    img.src = ev.target.result;
   };
   reader.readAsDataURL(file);
 }
 
 function clearCoverFile() {
-  selectedCoverFile = null;
-  uploadedCoverUrl = "";
+  selectedCoverBase64 = "";
   coverPreviewWrap.style.display = "none";
   coverPlaceholder.style.display = "flex";
   coverFileInput.value = "";
-}
-
-async function uploadCoverToCloudinary(file) {
-  return new Promise((resolve, reject) => {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", CLOUDINARY_PRESET);
-
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", CLOUDINARY_URL);
-
-    coverProgress.classList.remove("hidden");
-    coverProgressBar.style.width = "0%";
-    coverProgressText.textContent = "Yükleniyor…";
-
-    xhr.upload.addEventListener("progress", e => {
-      if (e.lengthComputable) {
-        const pct = Math.round((e.loaded / e.total) * 100);
-        coverProgressBar.style.width = pct + "%";
-        coverProgressText.textContent = `Yükleniyor… %${pct}`;
-      }
-    });
-
-    xhr.onload = () => {
-      coverProgress.classList.add("hidden");
-      if (xhr.status === 200) {
-        const res = JSON.parse(xhr.responseText);
-        resolve(res.secure_url);
-      } else {
-        reject(new Error("Cloudinary yükleme hatası: " + xhr.status));
-      }
-    };
-    xhr.onerror = () => {
-      coverProgress.classList.add("hidden");
-      reject(new Error("Ağ hatası oluştu."));
-    };
-    xhr.send(formData);
-  });
 }
 
 // ── UPLOAD BOOK ──
@@ -303,29 +283,21 @@ document.getElementById("uploadBookBtn").addEventListener("click", async () => {
   errEl.classList.add("hidden");
 
   const btn = document.getElementById("uploadBookBtn");
-  btn.textContent = "Yükleniyor…";
+  btn.textContent = "Kaydediliyor…";
   btn.disabled = true;
 
-  let cover = uploadedCoverUrl;
-
   try {
-    // Eğer yeni dosya seçildiyse önce Cloudinary'e yükle
-    if (selectedCoverFile && !uploadedCoverUrl) {
-      btn.textContent = "Kapak yükleniyor…";
-      cover = await uploadCoverToCloudinary(selectedCoverFile);
-      uploadedCoverUrl = cover;
-    }
-
-    btn.textContent = "Kaydediliyor…";
     await booksRef.push({
-      title, grade, category, subject, publisher, cover, link, featured,
+      title, grade, category, subject, publisher,
+      cover: selectedCoverBase64,
+      link, featured,
       createdAt: Date.now()
     });
     closeModal("uploadModal");
     clearUploadForm();
     alert("✅ Kitap başarıyla eklendi!");
   } catch (err) {
-    showUploadError(err.message || "Bir hata oluştu.");
+    showUploadError("Firebase hatası: " + err.message);
   } finally {
     btn.textContent = "📤 Kitabı Yükle";
     btn.disabled = false;

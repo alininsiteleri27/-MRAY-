@@ -1,4 +1,9 @@
-// ====================== FIREBASE CONFIG ======================
+/* ═══════════════════════════════════════════════
+   ŞAHIKALI – APP.JS
+   Firebase Realtime Database entegrasyonu
+   ═══════════════════════════════════════════════ */
+
+// ── FIREBASE INIT ──
 const firebaseConfig = {
   apiKey: "AIzaSyDuKLuoePZ6mNsKhQBGXumxMwF0UKTQvc8",
   authDomain: "oyun-75056.firebaseapp.com",
@@ -11,625 +16,421 @@ const firebaseConfig = {
 };
 
 firebase.initializeApp(firebaseConfig);
-const database = firebase.database();
-const booksRef = database.ref('sahikali_books');
+const db = firebase.database();
+const booksRef = db.ref("books");
 
-// ====================== LOCAL CACHE ======================
-let booksCache = [];
-let dbReady = false;
+// ── STATE ──
+let allBooks = [];
+let favorites = JSON.parse(localStorage.getItem("sahikali_favorites") || "[]");
+let isAdmin = false;
+let currentFilter = { cat: "", grade: "", subject: "", search: "", section: "home" };
+let currentTheme = localStorage.getItem("sahikali_theme") || "dark";
 
-// ====================== DATA LAYER ======================
-const DB = {
-  get() {
-    return booksCache;
-  },
-  add(book) {
-    book.id = Date.now().toString(36) + Math.random().toString(36).slice(2);
-    book.createdAt = new Date().toISOString();
-    booksRef.child(book.id).set(book);
-    return book;
-  },
-  delete(id) {
-    booksRef.child(id).remove();
-  },
-  update(id, changes) {
-    booksRef.child(id).update(changes);
-  },
-  toggleFeatured(id) {
-    const book = booksCache.find(b => b.id === id);
-    if (book) {
-      booksRef.child(id).update({ featured: !book.featured });
-    }
-  }
-};
+// ── ADMIN PASSWORD (obfuscated, not in HTML) ──
+const _ap = atob("MTY1ODAwOTM3NzY=");
 
-// ====================== SAMPLE DATA ======================
-function seedSampleBooks() {
-  if (booksCache.length > 0) return;
-  const samples = [
-    { title: 'Matematik Soru Bankası 9. Sınıf', publisher: 'Palme Yayıncılık', grade: '9', type: 'test', pages: '320', link: '#', image: 'https://placehold.co/400x300/111118/6366f1?text=Matematik+9', featured: true },
-    { title: 'Türkçe Ders Anlatımı 8. Sınıf', publisher: 'MEB Yayınları', grade: '8', type: 'ders_anlat', pages: '280', link: '#', image: 'https://placehold.co/400x300/111118/8b5cf6?text=Türkçe+8', featured: true },
-    { title: 'Fen Bilimleri Ders Kitabı 7. Sınıf', publisher: 'MEB Yayınları', grade: '7', type: 'ders', pages: '250', link: '#', image: 'https://placehold.co/400x300/111118/06b6d4?text=Fen+7', featured: false },
-    { title: 'İngilizce Hikaye Kitapları Seti', publisher: 'Oxford University Press', grade: '10', type: 'okuma', pages: '150', link: '#', image: 'https://placehold.co/400x300/111118/10b981?text=İngilizce+10', featured: true },
-    { title: 'AYT Matematik Deneme Sınavları', publisher: 'Benim Hocam', grade: '12', type: 'deneme', pages: '180', link: '#', image: 'https://placehold.co/400x300/111118/f59e0b?text=AYT+Mat', featured: true },
-    { title: 'Sosyal Bilgiler Ders Kitabı 6. Sınıf', publisher: 'MEB Yayınları', grade: '6', type: 'ders', pages: '220', link: '#', image: 'https://placehold.co/400x300/111118/ef4444?text=Sosyal+6', featured: false }
-  ];
-  const AUTO_SEED_DESC = `Şahikali Sitesi'nde öğrenciler için harika bir fırsat var! 📚\nTüm kitap PDF'leri, öğrencilerin başarıya ulaşmasına katkı sağlamak amacıyla tamamen ücretsiz olarak paylaşılıyor.\n\nKurucu Reisza, eğitime destek olmaktan asla geri durmuyor ve her gün yeni testler, okuma materyalleri ve ders anlatım kitapları ekleyerek içerikleri sürekli güncel tutuyor.\n\nBaşarıya giden yolda sen de yerini al, Şahikali ile öğrenmeyi kolaylaştır! 🚀`;
-  samples.forEach(b => {
-    b.description = AUTO_SEED_DESC;
-    DB.add(b);
+// ── THEME ──
+function applyTheme(t) {
+  currentTheme = t;
+  document.documentElement.setAttribute("data-theme", t);
+  localStorage.setItem("sahikali_theme", t);
+  document.getElementById("themeToggle").textContent =
+    t === "dark" ? "🌙" : t === "pink" ? "🌸" : t === "digital" ? "💻" : "🌿";
+  document.querySelectorAll(".theme-card").forEach(c => {
+    c.classList.toggle("active", c.dataset.theme === t);
   });
 }
+applyTheme(currentTheme);
 
-// ====================== FIREBASE REAL-TIME LISTENER ======================
-function startFirebaseSync() {
-  showLoadingOverlay(true);
-
-  booksRef.on('value', (snapshot) => {
-    const data = snapshot.val();
-    if (data && typeof data === 'object') {
-      booksCache = Object.entries(data).map(([id, book]) => ({ ...book, id }));
-      // Sort by createdAt desc (newest first)
-      booksCache.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
-    } else {
-      booksCache = [];
-    }
-
-    if (!dbReady) {
-      dbReady = true;
-      showLoadingOverlay(false);
-      // First load: seed if empty
-      seedSampleBooks();
-      showPage('home');
-    }
-
-    // Re-render active views
-    renderAll();
-    updateLiveStats();
-  }, (error) => {
-    showLoadingOverlay(false);
-    toast('❌ Veritabanı bağlantı hatası: ' + error.message, 'danger');
-  });
-}
-
-function renderAll() {
-  const p = state.activePage;
-  if (p === 'featured') renderFeatured();
-  if (p === 'books') renderBooks();
-  if (p === 'search') renderSearch();
-  if (p === 'home') updateLiveStats();
-  // Always refresh admin list if open
-  if (document.getElementById('admin-panel').classList.contains('open')) {
-    renderAdminBooks();
-  }
-}
-
-// ====================== LOADING OVERLAY ======================
-function showLoadingOverlay(show) {
-  let el = document.getElementById('loading-overlay');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'loading-overlay';
-    el.innerHTML = `
-      <div class="loading-inner">
-        <div class="loading-logo">📚</div>
-        <div class="loading-spinner"></div>
-        <div class="loading-text">Kitaplar yükleniyor...</div>
-      </div>`;
-    el.style.cssText = `
-      position:fixed;inset:0;z-index:9000;
-      background:var(--bg-primary);
-      display:flex;align-items:center;justify-content:center;
-      flex-direction:column;gap:16px;
-      transition:opacity 0.4s ease;
-    `;
-    document.body.appendChild(el);
-
-    // Inject spinner styles
-    const style = document.createElement('style');
-    style.textContent = `
-      .loading-inner{display:flex;flex-direction:column;align-items:center;gap:18px;}
-      .loading-logo{font-size:3rem;animation:pulse 1.5s ease infinite;}
-      .loading-spinner{width:40px;height:40px;border:3px solid rgba(99,102,241,0.2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;}
-      .loading-text{font-family:'Outfit',sans-serif;font-size:1rem;font-weight:600;color:var(--text-secondary);}
-      @keyframes spin{to{transform:rotate(360deg)}}
-    `;
-    document.head.appendChild(style);
-  }
-  if (show) {
-    el.style.opacity = '1';
-    el.style.pointerEvents = 'all';
-    el.style.display = 'flex';
-  } else {
-    el.style.opacity = '0';
-    el.style.pointerEvents = 'none';
-    setTimeout(() => { if (el) el.style.display = 'none'; }, 400);
-  }
-}
-
-// ====================== STATE ======================
-let state = {
-  activePage: 'home',
-  booksCat: 'all',
-  searchText: '',
-  searchGrade: '',
-  searchPublisher: '',
-  editingId: null,
-  cheatBuffer: ''
-};
-
-const TYPE_LABELS = { test: 'Test Kitabı', okuma: 'Okuma Kitabı', ders_anlat: 'Ders Anlatımı', ders: 'Ders Kitabı', deneme: 'Deneme Testi' };
-const TYPE_COLORS = { test: '1', okuma: '2', ders_anlat: '3', ders: '4', deneme: '5' };
-const GRADE_LABELS = {
-  okul_oncesi: 'Okul Öncesi',
-  tyt: 'TYT', ayt: 'AYT', tyt_ayt: 'TYT + AYT', kpss: 'KPSS'
-};
-function gradeLabel(grade) {
-  if (!grade) return '—';
-  return GRADE_LABELS[grade] || (grade + '. Sınıf');
-}
-
-// ====================== DOM ======================
-const $ = id => document.getElementById(id);
-const $$ = s => document.querySelectorAll(s);
-
-// ====================== SPA NAVIGATION ======================
-function showPage(name) {
-  if (state.activePage === name && dbReady) {
-    // Allow re-triggering renders even on same page after DB sync
-  }
-  state.activePage = name;
-
-  // hide all pages
-  $$('.page').forEach(p => p.classList.remove('active'));
-
-  // show target
-  const target = $(`page-${name}`);
-  if (target) {
-    requestAnimationFrame(() => target.classList.add('active'));
-    const inner = target.querySelector('.page-inner');
-    if (inner) inner.scrollTop = 0;
-    target.scrollTop = 0;
-  }
-
-  // update top nav buttons
-  $$('.nav-btn').forEach(b => b.classList.remove('active'));
-  const nbtn = $(`nav-${name === 'books' ? 'books' : name === 'featured' ? 'featured' : name === 'search' ? 'search-page' : 'home'}`);
-  if (nbtn) nbtn.classList.add('active');
-
-  // update bottom nav buttons
-  $$('.bnav-btn').forEach(b => b.classList.remove('active'));
-  const bnav = $(`bnav-${name === 'books' ? 'books' : name === 'featured' ? 'featured' : name === 'search' ? 'search-page' : 'home'}`);
-  if (bnav) bnav.classList.add('active');
-
-  // re-render on switch
-  if (name === 'featured') renderFeatured();
-  if (name === 'books') renderBooks();
-  if (name === 'search') { renderSearch(); setTimeout(() => $('search-input') && $('search-input').focus(), 200); }
-  if (name === 'home') updateLiveStats();
-}
-
-// Called from home page quick-category cards
-function goToCategory(cat) {
-  state.activePage = ''; // force re-render
-  showPage('books');
-  state.booksCat = cat;
-  setTimeout(() => {
-    $$('.cat-btn').forEach(b => {
-      b.classList.toggle('active', b.dataset.cat === cat);
+// ── FIREBASE: LOAD BOOKS ──
+function loadBooks() {
+  showLoading();
+  booksRef.on("value", snap => {
+    allBooks = [];
+    snap.forEach(child => {
+      allBooks.push({ id: child.key, ...child.val() });
     });
-    renderBooks();
-  }, 50);
+    // Count stat
+    document.getElementById("statBooks").textContent = allBooks.length;
+    renderAll();
+  });
 }
 
-window.showPage = showPage;
-window.goToCategory = goToCategory;
+function showLoading() {
+  document.getElementById("featuredGrid").innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  document.getElementById("allBooksGrid").innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+}
 
-// ====================== BOOK CARD HTML ======================
-function makeBookCard(book, delay = 0) {
-  const typeLabel = TYPE_LABELS[book.type] || book.type;
-  const img = book.imageData || book.image || `https://placehold.co/400x300/111118/6366f1?text=${encodeURIComponent((book.title || '').slice(0,12))}`;
-  const col = TYPE_COLORS[book.type] || '1';
+// ── RENDER HELPERS ──
+function filterBooks() {
+  return allBooks.filter(b => {
+    const q = currentFilter.search.toLowerCase();
+    const matchSearch = !q ||
+      (b.title || "").toLowerCase().includes(q) ||
+      (b.publisher || "").toLowerCase().includes(q) ||
+      (b.subject || "").toLowerCase().includes(q);
+    const matchCat = !currentFilter.cat || b.category === currentFilter.cat;
+    const matchGrade = !currentFilter.grade || String(b.grade) === String(currentFilter.grade);
+    const matchSub = !currentFilter.subject || b.subject === currentFilter.subject;
+    return matchSearch && matchCat && matchGrade && matchSub;
+  });
+}
+
+function buildCard(book) {
+  const isFav = favorites.includes(book.id);
+  const coverHtml = book.cover
+    ? `<img class="book-cover" src="${escHtml(book.cover)}" alt="${escHtml(book.title)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" /><div class="book-cover-placeholder" style="display:none">📖</div>`
+    : `<div class="book-cover-placeholder">📖</div>`;
+
+  const tags = [];
+  if (book.grade) tags.push(book.grade + ". Sınıf");
+  if (book.subject) tags.push(capFirst(book.subject));
+  if (book.category) tags.push(catLabel(book.category));
+
+  const tagsHtml = tags.map(t => `<span class="book-tag">${escHtml(t)}</span>`).join("");
+  const featuredBadge = book.featured === true || book.featured === "true"
+    ? `<div class="featured-badge">⭐ Öne Çıkan</div>` : "";
+
+  const deleteBtn = isAdmin
+    ? `<button class="btn-delete" onclick="deleteBook('${book.id}',event)" title="Sil">🗑</button>` : "";
+
   return `
-  <div class="book-card" style="animation-delay:${delay}ms" onclick="openModal('${book.id}')" role="listitem" tabindex="0" aria-label="${book.title}">
-    <div class="book-img-wrap">
-      <img src="${img}" alt="${book.title}" loading="lazy" onerror="this.src='https://placehold.co/400x300/0d0d12/6366f1?text=📚'"/>
-      <span class="book-badge">${typeLabel}</span>
-      ${book.featured ? '<span class="book-featured-badge">⭐ Öne Çıkan</span>' : ''}
-      <div class="book-overlay"><button class="book-overlay-btn">Kitaba Eriş</button></div>
-    </div>
+  <div class="book-card" onclick="openBookDetail('${book.id}')">
+    ${featuredBadge}
+    ${coverHtml}
     <div class="book-info">
-      <div class="book-title">${book.title}</div>
-      <div class="book-meta">
-        <span class="meta-tag grade-color-${col}">${gradeLabel(book.grade)}</span>
-        <span class="meta-tag">${book.publisher}</span>
-      </div>
-      <div class="book-stat">📄 ${book.pages || '?'} sayfa</div>
+      <div class="book-title">${escHtml(book.title)}</div>
+      ${book.publisher ? `<div class="book-publisher">${escHtml(book.publisher)}</div>` : ""}
+      <div class="book-tags">${tagsHtml}</div>
+    </div>
+    <div class="book-actions">
+      <a class="btn-access" href="${escHtml(book.link || "#")}" target="_blank" rel="noopener" onclick="event.stopPropagation()">📥 Kitaba Ulaş</a>
+      <button class="btn-fav ${isFav ? "active" : ""}" onclick="toggleFav('${book.id}',event)" title="Favorilere Ekle">${isFav ? "⭐" : "☆"}</button>
+      ${deleteBtn}
     </div>
   </div>`;
 }
 
-// ====================== RENDER FUNCTIONS ======================
-function renderFeatured() {
-  const grid = $('featured-carousel');
-  if (!grid) return;
-  if (!dbReady) { grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="loading-spinner" style="margin:0 auto"></div></div>'; return; }
-  const featured = DB.get().filter(b => b.featured);
-  if (featured.length === 0) {
-    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-icon">⭐</div><h3>Öne çıkan kitap yok</h3><p>Admin panelinden kitapları öne çıkarın.</p></div>`;
-    return;
-  }
-  grid.innerHTML = featured.map((b, i) => makeBookCard(b, i * 60)).join('');
-}
+function renderAll() {
+  const filtered = filterBooks();
 
-function renderBooks() {
-  const grid = $('books-grid');
-  const noRes = $('no-results');
-  if (!grid) return;
-  let books = DB.get();
-  if (state.booksCat !== 'all') books = books.filter(b => b.type === state.booksCat);
-  if (books.length === 0) {
-    grid.innerHTML = '';
-    noRes.style.display = 'block';
+  // Featured section
+  const featured = allBooks.filter(b => b.featured === true || b.featured === "true").slice(0, 8);
+  const fg = document.getElementById("featuredGrid");
+  fg.innerHTML = featured.length
+    ? featured.map(buildCard).join("")
+    : `<div class="empty-state">Henüz öne çıkan kitap yok.</div>`;
+
+  // Favorites section
+  const favBooks = allBooks.filter(b => favorites.includes(b.id));
+  const favG = document.getElementById("favoritesGrid");
+  favG.innerHTML = favBooks.length
+    ? favBooks.map(buildCard).join("")
+    : `<div class="empty-state">Henüz favori eklemediniz. Kitap kartındaki ⭐ ikonuna tıklayın.</div>`;
+
+  // All books
+  const ag = document.getElementById("allBooksGrid");
+  const noRes = document.getElementById("noResults");
+  document.getElementById("resultCount").textContent = `${filtered.length} kitap`;
+  if (filtered.length === 0) {
+    ag.innerHTML = "";
+    noRes.classList.remove("hidden");
   } else {
-    noRes.style.display = 'none';
-    grid.innerHTML = books.map((b, i) => makeBookCard(b, i * 50)).join('');
+    noRes.classList.add("hidden");
+    ag.innerHTML = filtered.map(buildCard).join("");
   }
 }
 
-function renderSearch() {
-  const grid = $('search-grid');
-  const noRes = $('no-results-search');
-  const hint = $('search-empty-hint');
-  if (!grid) return;
+// ── FAVORITE TOGGLE ──
+window.toggleFav = function(id, event) {
+  event.stopPropagation();
+  const idx = favorites.indexOf(id);
+  if (idx > -1) favorites.splice(idx, 1);
+  else favorites.push(id);
+  localStorage.setItem("sahikali_favorites", JSON.stringify(favorites));
+  renderAll();
+};
 
-  const q = state.searchText.trim();
-  const grade = state.searchGrade;
-  const pub = state.searchPublisher.trim().toLowerCase();
-
-  if (!q && !grade && !pub) {
-    grid.innerHTML = '';
-    noRes.style.display = 'none';
-    hint.style.display = 'block';
-    return;
-  }
-  hint.style.display = 'none';
-
-  let books = DB.get();
-  if (grade) books = books.filter(b => b.grade === grade);
-  if (pub) books = books.filter(b => b.publisher.toLowerCase().includes(pub));
-  if (q) {
-    const ql = q.toLowerCase();
-    books = books.filter(b =>
-      b.title.toLowerCase().includes(ql) ||
-      b.publisher.toLowerCase().includes(ql) ||
-      (b.grade || '').includes(ql) ||
-      (TYPE_LABELS[b.type] || '').toLowerCase().includes(ql)
-    );
-  }
-
-  if (books.length === 0) {
-    grid.innerHTML = '';
-    noRes.style.display = 'block';
-  } else {
-    noRes.style.display = 'none';
-    grid.innerHTML = books.map((b, i) => makeBookCard(b, i * 50)).join('');
-  }
-}
-
-function updateLiveStats() {
-  const books = DB.get();
-  if ($('stat-total')) $('stat-total').textContent = books.length;
-  if ($('stat-featured')) $('stat-featured').textContent = books.filter(b => b.featured).length;
-  if ($('stat-cats')) $('stat-cats').textContent = new Set(books.map(b => b.type)).size;
-  if ($('stat-pubs')) $('stat-pubs').textContent = new Set(books.map(b => b.publisher)).size;
-}
-
-// ====================== MODAL ======================
-function openModal(id) {
-  const book = DB.get().find(b => b.id === id);
+// ── BOOK DETAIL MODAL ──
+window.openBookDetail = function(id) {
+  const book = allBooks.find(b => b.id === id);
   if (!book) return;
-  const img = book.imageData || book.image || `https://placehold.co/400x300/0d0d12/6366f1?text=📚`;
-  $('modal-title').textContent = book.title;
-  $('modal-img').src = img;
-  $('modal-type').textContent = TYPE_LABELS[book.type] || book.type;
-  $('modal-grade').textContent = gradeLabel(book.grade);
-  $('modal-publisher').textContent = book.publisher;
-  $('modal-pages').textContent = (book.pages || '?') + ' Sayfa';
-  $('modal-desc').textContent = book.description || 'Açıklama bulunmuyor.';
+  const inner = document.getElementById("bookDetailInner");
+  const coverHtml = book.cover
+    ? `<img src="${escHtml(book.cover)}" alt="${escHtml(book.title)}" style="width:100%;border-radius:8px;" onerror="this.parentElement.innerHTML='<div style=\'font-size:60px;text-align:center;padding:20px\'>📖</div>'">`
+    : `<div style="font-size:60px;text-align:center;padding:20px">📖</div>`;
 
-  const btn = $('modal-access-btn');
-  if (book.pdfData) { btn.href = book.pdfData; btn.target = '_blank'; btn.textContent = '📄 PDF\'yi Aç'; }
-  else if (book.link && book.link !== '#') { btn.href = book.link; btn.target = '_blank'; btn.textContent = '🔗 Kitabı Aç'; }
-  else { btn.href = '#'; btn.textContent = '🔒 Link Mevcut Değil'; }
-
-  $('modal-overlay').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-function closeModal() {
-  $('modal-overlay').classList.remove('open');
-  document.body.style.overflow = '';
-}
-
-// ====================== ADMIN ======================
-function openAdmin() {
-  $('admin-panel').classList.add('open');
-  renderAdminBooks();
-}
-function closeAdmin() {
-  $('admin-panel').classList.remove('open');
-  state.editingId = null;
-  resetAdminForm();
-}
-
-function switchAdminTab(tabId) {
-  $$('.admin-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tabId));
-  $$('.admin-section').forEach(s => s.classList.toggle('active', s.id === `section-${tabId}`));
-  if (tabId === 'list') renderAdminBooks();
-}
-
-function renderAdminBooks() {
-  const list = $('admin-books-list');
-  const books = DB.get();
-  if (books.length === 0) {
-    list.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📭</div><h3>Kitap yok</h3><p>Yeni kitap ekleyin</p></div>`;
-    return;
-  }
-  list.innerHTML = books.map(b => {
-    const img = b.imageData || b.image || `https://placehold.co/52x70/111118/6366f1?text=📚`;
-    return `
-    <div class="admin-book-item">
-      <img class="admin-book-thumb" src="${img}" alt="${b.title}" onerror="this.src='https://placehold.co/52x70/0d0d12/6366f1?text=📚'"/>
-      <div class="admin-book-details">
-        <div class="admin-book-name">${b.title}</div>
-        <div class="admin-book-sub">${gradeLabel(b.grade)} · ${b.publisher} · ${TYPE_LABELS[b.type] || b.type}</div>
+  inner.innerHTML = `
+    <div class="book-detail-cover">${coverHtml}</div>
+    <div class="book-detail-info">
+      <div class="book-detail-title">${escHtml(book.title)}</div>
+      <div class="book-detail-meta">
+        ${book.publisher ? `<div class="book-detail-meta-row"><span class="key">Yayınevi</span><span>${escHtml(book.publisher)}</span></div>` : ""}
+        ${book.grade ? `<div class="book-detail-meta-row"><span class="key">Sınıf</span><span>${escHtml(String(book.grade))}. Sınıf</span></div>` : ""}
+        ${book.subject ? `<div class="book-detail-meta-row"><span class="key">Ders</span><span>${capFirst(book.subject)}</span></div>` : ""}
+        ${book.category ? `<div class="book-detail-meta-row"><span class="key">Kategori</span><span>${catLabel(book.category)}</span></div>` : ""}
       </div>
-      <div class="admin-book-actions">
-        <button class="btn-icon featured ${b.featured ? 'active' : ''}" title="Öne Çıkar" onclick="adminToggleFeatured('${b.id}')">⭐</button>
-        <button class="btn-icon edit" title="Düzenle" onclick="adminEditBook('${b.id}')">✏️</button>
-        <button class="btn-icon danger" title="Sil" onclick="adminDeleteBook('${b.id}')">🗑️</button>
-      </div>
+      <a class="btn-access-large" href="${escHtml(book.link || "#")}" target="_blank" rel="noopener">📥 Kitaba Ulaş</a>
     </div>`;
-  }).join('');
-}
+  openModal("bookModal");
+};
 
-function adminToggleFeatured(id) {
-  DB.toggleFeatured(id);
-  toast('Öne çıkan durumu güncellendi!', 'success');
-}
-function adminDeleteBook(id) {
-  if (!confirm('Bu kitabı silmek istediğinize emin misiniz?')) return;
-  DB.delete(id);
-  toast('Kitap silindi.', 'danger');
-}
-function adminEditBook(id) {
-  const book = DB.get().find(b => b.id === id);
-  if (!book) return;
-  state.editingId = id;
-  switchAdminTab('add');
-  $('f-title').value = book.title;
-  $('f-publisher').value = book.publisher;
-  $('f-type').value = book.type;
-  const isOkuma = book.type === 'okuma';
-  $('grade-field').style.display = isOkuma ? 'none' : '';
-  $('f-grade').value = isOkuma ? '' : (book.grade || '');
-  $('f-pages').value = book.pages || '';
-  $('f-link').value = book.link || '';
-  $('f-desc').value = book.description || '';
-  $('f-featured').checked = !!book.featured;
-  if (book.imageData) { $('img-preview').src = book.imageData; $('img-preview-wrap').classList.add('show'); }
-  $('form-title-label').textContent = '✏️ Kitabı Düzenle';
-  $('btn-submit-form').textContent = 'Güncelle';
-}
+// ── DELETE BOOK (admin) ──
+window.deleteBook = function(id, event) {
+  event.stopPropagation();
+  if (!isAdmin) return;
+  if (!confirm("Bu kitabı silmek istediğinizden emin misiniz?")) return;
+  booksRef.child(id).remove();
+};
 
-const AUTO_DESC = `Şahikali Sitesi'nde öğrenciler için harika bir fırsat var! 📚\nTüm kitap PDF'leri, öğrencilerin başarıya ulaşmasına katkı sağlamak amacıyla tamamen ücretsiz olarak paylaşılıyor.\n\nKurucu Reisza, eğitime destek olmaktan asla geri durmuyor ve her gün yeni testler, okuma materyalleri ve ders anlatım kitapları ekleyerek içerikleri sürekli güncel tutuyor.\n\nBaşarıya giden yolda sen de yerini al, Şahikali ile öğrenmeyi kolaylaştır! 🚀`;
+// ── UPLOAD BOOK ──
+document.getElementById("uploadBookBtn").addEventListener("click", async () => {
+  const title = document.getElementById("uTitle").value.trim();
+  const grade = document.getElementById("uGrade").value;
+  const category = document.getElementById("uCategory").value;
+  const subject = document.getElementById("uSubject").value;
+  const publisher = document.getElementById("uPublisher").value.trim();
+  const cover = document.getElementById("uCover").value.trim();
+  const link = document.getElementById("uLink").value.trim();
+  const featured = document.getElementById("uFeatured").value === "true";
+  const errEl = document.getElementById("uploadError");
 
-function resetAdminForm() {
-  $('book-form').reset();
-  state.editingId = null;
-  $('form-title-label').textContent = '➕ Yeni Kitap Ekle';
-  $('btn-submit-form').textContent = 'Kitabı Ekle';
-  $('img-preview-wrap').classList.remove('show');
-  $('pdf-name').textContent = '';
-  $('img-name').textContent = '';
-  window._pdfData = null;
-  window._imgData = null;
-  if ($('f-desc')) $('f-desc').value = AUTO_DESC;
-}
+  if (!title) { showUploadError("Kitap adı zorunludur."); return; }
+  if (!category) { showUploadError("Kategori seçmelisiniz."); return; }
+  if (!link) { showUploadError("İndirme linki zorunludur."); return; }
 
-// ====================== ADMIN FORM ======================
-function setupAdminForm() {
-  window._pdfData = null;
-  window._imgData = null;
+  errEl.classList.add("hidden");
 
-  $('f-pdf').addEventListener('change', e => {
-    const file = e.target.files[0]; if (!file) return;
-    $('pdf-name').textContent = '⚠️ PDF yerine aşağıya link girin: ' + file.name;
-    toast('PDF dosyaları çok büyük olduğu için direkt yüklenemez. Lütfen PDF\'i bir sisteme yükleyip linkini girin.', 'danger');
-    window._pdfData = null;
-    e.target.value = '';
-  });
+  const btn = document.getElementById("uploadBookBtn");
+  btn.textContent = "Yükleniyor…";
+  btn.disabled = true;
 
-  $('f-image').addEventListener('change', e => {
-    const file = e.target.files[0]; if (!file) return;
-    $('img-name').textContent = file.name;
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      const MAX_W = 400, MAX_H = 300;
-      let w = img.width, h = img.height;
-      if (w > MAX_W) { h = Math.round(h * MAX_W / w); w = MAX_W; }
-      if (h > MAX_H) { w = Math.round(w * MAX_H / h); h = MAX_H; }
-      const canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      const compressed = canvas.toDataURL('image/jpeg', 0.72);
-      URL.revokeObjectURL(url);
-      window._imgData = compressed;
-      $('img-preview').src = compressed;
-      $('img-preview-wrap').classList.add('show');
-      const kb = Math.round(compressed.length * 0.75 / 1024);
-      if (kb > 200) toast(`Resim ${kb}KB — büyük resimler yüklemeyi yavaşlatabilir.`, 'default');
-    };
-    img.src = url;
-  });
-
-  $('book-form').addEventListener('submit', e => {
-    e.preventDefault();
-    const title = $('f-title').value.trim();
-    const publisher = $('f-publisher').value.trim();
-    const grade = $('f-grade').value;
-    const type = $('f-type').value;
-    const pages = $('f-pages').value.trim();
-    const link = $('f-link').value.trim();
-    const desc = $('f-desc').value.trim();
-    const featured = $('f-featured').checked;
-
-    const isOkuma = type === 'okuma';
-    if (!title || !publisher || !type) {
-      toast('Lütfen zorunlu alanları doldurun!', 'danger'); return;
-    }
-    if (!isOkuma && !grade) {
-      toast('Lütfen sınıf seçin!', 'danger'); return;
-    }
-
-    const imgVal = window._imgData;
-    const imgFallback = `https://placehold.co/400x300/111118/6366f1?text=${encodeURIComponent(title.slice(0,12))}`;
-
-    const bookData = {
-      title, publisher, grade, type, pages, link,
-      description: desc || AUTO_DESC,
-      featured,
-      pdfData: null,
-      imageData: imgVal || null,
-      image: imgVal ? null : imgFallback
-    };
-
-    if (state.editingId) {
-      const old = DB.get().find(b => b.id === state.editingId);
-      if (!bookData.imageData && old) { bookData.imageData = old.imageData; bookData.image = old.image; }
-      if (!bookData.pdfData && old) bookData.pdfData = old.pdfData;
-      DB.update(state.editingId, bookData);
-      toast('✅ Kitap güncellendi!', 'success');
-    } else {
-      DB.add(bookData);
-      toast('✅ Kitap başarıyla eklendi!', 'success');
-    }
-
-    resetAdminForm();
-    // Firebase listener will auto re-render
-  });
-
-  $('btn-reset-form').addEventListener('click', resetAdminForm);
-
-  function toggleGradeField() {
-    const isOkuma = $('f-type').value === 'okuma';
-    const gradeField = $('grade-field');
-    gradeField.style.display = isOkuma ? 'none' : '';
-    if (isOkuma) $('f-grade').value = '';
-  }
-  $('f-type').addEventListener('change', toggleGradeField);
-}
-
-// ====================== SEARCH SETUP ======================
-function setupSearch() {
-  $('nav-search-input').addEventListener('input', function () {
-    state.searchText = this.value;
-    $('search-input').value = this.value;
-    showPage('search');
-    renderSearch();
-  });
-
-  $('search-input').addEventListener('input', function () {
-    state.searchText = this.value;
-    $('nav-search-input').value = this.value;
-    renderSearch();
-  });
-  $('filter-grade').addEventListener('change', function () {
-    state.searchGrade = this.value; renderSearch();
-  });
-  $('filter-publisher').addEventListener('input', function () {
-    state.searchPublisher = this.value; renderSearch();
-  });
-}
-
-// ====================== CATEGORY FILTER ======================
-function setupCategoryFilter() {
-  $$('.cat-btn').forEach(btn => {
-    btn.addEventListener('click', function () {
-      $$('.cat-btn').forEach(b => b.classList.remove('active'));
-      this.classList.add('active');
-      state.booksCat = this.dataset.cat;
-      renderBooks();
+  try {
+    await booksRef.push({
+      title, grade, category, subject, publisher, cover, link, featured,
+      createdAt: Date.now()
     });
-  });
-}
-
-// ====================== ADMIN TABS ======================
-function setupAdminTabs() {
-  $$('.admin-tab').forEach(tab => {
-    tab.addEventListener('click', function () { switchAdminTab(this.dataset.tab); });
-  });
-}
-
-// ====================== CHEAT CODE ======================
-function setupCheatCode() {
-  const SECRET = '16580093776';
-  document.addEventListener('keypress', e => {
-    state.cheatBuffer += e.key;
-    if (state.cheatBuffer.length > SECRET.length) state.cheatBuffer = state.cheatBuffer.slice(-SECRET.length);
-    if (state.cheatBuffer === SECRET) {
-      state.cheatBuffer = '';
-      openAdmin();
-      showCheatHint('🔓 Admin Paneli Açıldı!');
-    }
-  });
-}
-function showCheatHint(msg) {
-  const h = document.createElement('div');
-  h.className = 'cheat-hint'; h.textContent = msg;
-  document.body.appendChild(h);
-  requestAnimationFrame(() => h.classList.add('show'));
-  setTimeout(() => { h.classList.remove('show'); setTimeout(() => h.remove(), 500); }, 2500);
-}
-
-// ====================== TOAST ======================
-function toast(msg, type = 'default') {
-  const el = document.createElement('div');
-  el.className = `toast-item ${type}`;
-  const icons = { default: 'ℹ️', success: '✅', danger: '❌' };
-  el.innerHTML = `<span>${icons[type] || 'ℹ️'}</span>${msg}`;
-  $('toast').appendChild(el);
-  setTimeout(() => { el.style.animation = 'toastOut 0.3s ease forwards'; setTimeout(() => el.remove(), 300); }, 3500);
-}
-
-// ====================== INIT ======================
-document.addEventListener('DOMContentLoaded', () => {
-  setupAdminForm();
-  setupSearch();
-  setupCategoryFilter();
-  setupAdminTabs();
-  setupCheatCode();
-
-  // Modal
-  $('modal-overlay').addEventListener('click', e => { if (e.target === $('modal-overlay')) closeModal(); });
-  $('modal-close').addEventListener('click', closeModal);
-
-  // Admin
-  $('admin-close').addEventListener('click', closeAdmin);
-
-  // Start Firebase sync (shows loading overlay until ready)
-  startFirebaseSync();
+    closeModal("uploadModal");
+    clearUploadForm();
+    alert("✅ Kitap başarıyla eklendi!");
+  } catch (err) {
+    showUploadError("Firebase hatası: " + err.message);
+  } finally {
+    btn.textContent = "📤 Kitabı Yükle";
+    btn.disabled = false;
+  }
 });
 
-// Expose globals
+function showUploadError(msg) {
+  const el = document.getElementById("uploadError");
+  el.textContent = "❌ " + msg;
+  el.classList.remove("hidden");
+}
+
+function clearUploadForm() {
+  ["uTitle","uGrade","uCategory","uSubject","uPublisher","uCover","uLink"].forEach(id => {
+    document.getElementById(id).value = "";
+  });
+  document.getElementById("uFeatured").value = "false";
+  document.getElementById("uploadError").classList.add("hidden");
+}
+
+// ── ADMIN LOGIN ──
+document.getElementById("adminUploadBtn").addEventListener("click", () => {
+  if (isAdmin) {
+    openModal("uploadModal");
+  } else {
+    document.getElementById("adminPasswordInput").value = "";
+    document.getElementById("adminError").classList.add("hidden");
+    openModal("adminModal");
+  }
+});
+
+document.getElementById("adminLoginBtn").addEventListener("click", () => {
+  const pw = document.getElementById("adminPasswordInput").value;
+  if (pw === _ap) {
+    isAdmin = true;
+    closeModal("adminModal");
+    openModal("uploadModal");
+    renderAll(); // Show delete buttons
+  } else {
+    document.getElementById("adminError").classList.remove("hidden");
+    document.getElementById("adminPasswordInput").value = "";
+  }
+});
+
+document.getElementById("adminPasswordInput").addEventListener("keydown", e => {
+  if (e.key === "Enter") document.getElementById("adminLoginBtn").click();
+});
+
+// ── SEARCH & FILTER ──
+let searchTimer;
+document.getElementById("searchInput").addEventListener("input", e => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    currentFilter.search = e.target.value;
+    renderAll();
+  }, 250);
+});
+
+document.getElementById("gradeFilter").addEventListener("change", e => {
+  currentFilter.grade = e.target.value;
+  renderAll();
+});
+document.getElementById("subjectFilter").addEventListener("change", e => {
+  currentFilter.subject = e.target.value;
+  renderAll();
+});
+
+// ── SIDEBAR NAV ──
+document.querySelectorAll(".nav-item[data-section]").forEach(el => {
+  el.addEventListener("click", e => {
+    e.preventDefault();
+    const sec = el.dataset.section;
+    setActiveNav(el);
+    if (sec === "home") {
+      showSections(["heroSection","featuredSection","favoritesSection","allBooksSection"]);
+      currentFilter.cat = ""; renderAll();
+    } else if (sec === "favorites") {
+      showSections(["favoritesSection"]);
+    } else if (sec === "recent") {
+      currentFilter.cat = ""; renderAll();
+      showSections(["allBooksSection"]);
+    } else if (sec === "all") {
+      showSections(["allBooksSection"]);
+    }
+    closeSidebarMobile();
+  });
+});
+
+document.querySelectorAll(".cat-item").forEach(el => {
+  el.addEventListener("click", e => {
+    e.preventDefault();
+    currentFilter.cat = el.dataset.cat;
+    setActiveNav(el);
+    currentFilter.search = ""; currentFilter.grade = ""; currentFilter.subject = "";
+    document.getElementById("searchInput").value = "";
+    document.getElementById("gradeFilter").value = "";
+    document.getElementById("subjectFilter").value = "";
+    renderAll();
+    showSections(["allBooksSection"]);
+    closeSidebarMobile();
+  });
+});
+
+document.querySelector(".see-all").addEventListener("click", e => {
+  e.preventDefault();
+  currentFilter.cat = "";
+  renderAll();
+  showSections(["allBooksSection"]);
+});
+
+function setActiveNav(el) {
+  document.querySelectorAll(".nav-item").forEach(i => i.classList.remove("active"));
+  el.classList.add("active");
+}
+
+function showSections(ids) {
+  const allSecs = ["heroSection","featuredSection","favoritesSection","allBooksSection"];
+  allSecs.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = ids.includes(id) ? "" : "none";
+  });
+}
+
+// ── MODAL HELPERS ──
+function openModal(id) {
+  document.getElementById(id).classList.remove("hidden");
+}
+function closeModal(id) {
+  document.getElementById(id).classList.add("hidden");
+}
 window.openModal = openModal;
 window.closeModal = closeModal;
-window.openAdmin = openAdmin;
-window.closeAdmin = closeAdmin;
-window.adminDeleteBook = adminDeleteBook;
-window.adminEditBook = adminEditBook;
-window.adminToggleFeatured = adminToggleFeatured;
-window.switchAdminTab = switchAdminTab;
-window.renderSearch = renderSearch;
-window.state = state;
+
+document.querySelectorAll(".modal-close, [data-close]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const target = btn.dataset.close || btn.closest(".modal-overlay")?.id;
+    if (target) closeModal(target);
+  });
+});
+
+document.querySelectorAll(".modal-overlay").forEach(overlay => {
+  overlay.addEventListener("click", e => {
+    if (e.target === overlay) closeModal(overlay.id);
+  });
+});
+
+// Sidebar buttons
+document.getElementById("howToBtn").addEventListener("click", e => {
+  e.preventDefault(); openModal("howToModal"); closeSidebarMobile();
+});
+document.getElementById("contactBtn").addEventListener("click", e => {
+  e.preventDefault(); openModal("contactModal"); closeSidebarMobile();
+});
+document.getElementById("settingsBtn").addEventListener("click", e => {
+  e.preventDefault(); openModal("settingsModal"); closeSidebarMobile();
+});
+
+// Theme cards
+document.querySelectorAll(".theme-card[data-theme]").forEach(btn => {
+  btn.addEventListener("click", () => applyTheme(btn.dataset.theme));
+});
+document.getElementById("themeToggle").addEventListener("click", () => {
+  openModal("settingsModal");
+});
+
+// ── MOBILE SIDEBAR ──
+const hamburger = document.getElementById("hamburger");
+const sidebar = document.getElementById("sidebar");
+const sidebarOverlay = document.getElementById("sidebarOverlay");
+
+hamburger.addEventListener("click", () => {
+  sidebar.classList.toggle("open");
+  sidebarOverlay.classList.toggle("visible");
+});
+sidebarOverlay.addEventListener("click", closeSidebarMobile);
+
+function closeSidebarMobile() {
+  sidebar.classList.remove("open");
+  sidebarOverlay.classList.remove("visible");
+}
+
+// ── UTILS ──
+function escHtml(str) {
+  if (!str) return "";
+  return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+function capFirst(str) {
+  if (!str) return "";
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+function catLabel(cat) {
+  const map = {
+    "ders-kitabi":"Ders Kitabı","ders-anlatim":"Ders Anlatım","deneme":"Deneme Testi",
+    "soru-bankasi":"Soru Bankası","foy":"Föy","hikaye":"Hikaye","ansiklopedi":"Ansiklopedi",
+    "tyt":"TYT","ayt":"AYT","tyt-ayt":"TYT+AYT","kpss":"KPSS"
+  };
+  return map[cat] || capFirst(cat);
+}
+
+// Animate stat counter
+function animateCounter(el, target) {
+  if (isNaN(target)) return;
+  let cur = 0;
+  const step = Math.ceil(target / 40);
+  const timer = setInterval(() => {
+    cur = Math.min(cur + step, target);
+    el.textContent = cur;
+    if (cur >= target) clearInterval(timer);
+  }, 30);
+}
+
+// ── INIT ──
+loadBooks();
+
+// Animate stat counters after load
+booksRef.once("value", snap => {
+  const count = snap.numChildren();
+  setTimeout(() => animateCounter(document.getElementById("statBooks"), count), 300);
+});

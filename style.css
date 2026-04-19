@@ -758,6 +758,77 @@ input, select { font-family: inherit; }
 }
 .sidebar-overlay.visible { display: block; }
 
+/* ── COVER UPLOAD ── */
+.cover-drop-zone {
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: var(--surface);
+}
+.cover-drop-zone:hover { border-color: var(--accent); background: var(--surface2); }
+.cover-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-dim);
+  font-size: 13px;
+  text-align: center;
+  pointer-events: none;
+}
+.cover-upload-icon { font-size: 32px; }
+.cover-hint { font-size: 11px; color: var(--text-dim); opacity: 0.7; }
+.cover-preview-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 100%;
+}
+.cover-preview-img {
+  max-height: 160px;
+  max-width: 100%;
+  border-radius: 8px;
+  object-fit: contain;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+.cover-remove-btn {
+  position: absolute;
+  top: -8px; right: -8px;
+  width: 26px; height: 26px;
+  background: #fa5050;
+  color: #fff;
+  border-radius: 50%;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  transition: transform 0.2s;
+}
+.cover-remove-btn:hover { transform: scale(1.15); }
+.cover-upload-progress {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cover-progress-bar {
+  height: 4px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  border-radius: 2px;
+  width: 0%;
+  transition: width 0.2s;
+}
+.cover-upload-progress span { font-size: 12px; color: var(--text-dim); text-align: center; }
+
 /* ── ADMIN DELETE BTN ── */
 .btn-delete {
   width: 36px; height: 36px;

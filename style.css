@@ -758,6 +758,36 @@ input, select { font-family: inherit; }
 }
 .sidebar-overlay.visible { display: block; }
 
+/* ── TYPE BUTTONS (upload form) ── */
+.type-btn-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+.type-btn {
+  padding: 8px 14px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+.type-btn:hover {
+  border-color: var(--accent);
+  color: var(--text);
+  background: var(--surface2);
+}
+.type-btn.active {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+  color: var(--accent);
+  font-weight: 700;
+}
+
 /* ── COVER UPLOAD ── */
 .cover-drop-zone {
   border: 2px dashed var(--border);

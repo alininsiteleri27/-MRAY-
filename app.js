@@ -185,7 +185,7 @@ window.deleteBook = function(id, event) {
 
 // ── CLOUDINARY CONFIG ──
 const CLOUDINARY_CLOUD = "ddeisebyz";
-const CLOUDINARY_PRESET = "Kök";
+const CLOUDINARY_PRESET = "Root";
 const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`;
 
 // ── COVER FILE UPLOAD UI ──

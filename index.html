@@ -30,11 +30,11 @@
       <span class="nav-icon">🕐</span> Son Eklenenler
     </a>
 
-    <p class="nav-label">Kategoriler</p>
+    <p class="nav-label">Kitap Türleri</p>
     <a href="#" class="nav-item cat-item" data-cat="ders-kitabi">📘 Ders Kitabı</a>
-    <a href="#" class="nav-item cat-item" data-cat="ders-anlatim">📖 Ders Anlatım Kitabı</a>
-    <a href="#" class="nav-item cat-item" data-cat="deneme">📝 Deneme Testi</a>
+    <a href="#" class="nav-item cat-item" data-cat="ders-anlatim">📖 Ders Anlatımı</a>
     <a href="#" class="nav-item cat-item" data-cat="soru-bankasi">🗂 Soru Bankası</a>
+    <a href="#" class="nav-item cat-item" data-cat="deneme">📝 Deneme Testi</a>
     <a href="#" class="nav-item cat-item" data-cat="foy">📋 Föyler</a>
     <a href="#" class="nav-item cat-item" data-cat="hikaye">📚 Hikaye Kitabı</a>
     <a href="#" class="nav-item cat-item" data-cat="ansiklopedi">🌐 Ansiklopedi</a>
@@ -173,62 +173,74 @@
         <label>Kitap Adı *</label>
         <input type="text" class="modal-input" id="uTitle" placeholder="Kitap adını girin" />
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Sınıf</label>
-          <select class="modal-input" id="uGrade">
-            <option value="">Seçin</option>
-            <option value="5">5. Sınıf</option>
-            <option value="6">6. Sınıf</option>
-            <option value="7">7. Sınıf</option>
-            <option value="8">8. Sınıf</option>
-            <option value="9">9. Sınıf</option>
-            <option value="10">10. Sınıf</option>
-            <option value="11">11. Sınıf</option>
-            <option value="12">12. Sınıf</option>
-            <option value="mezun">Mezun</option>
-          </select>
+
+      <!-- KİTAP TÜRÜ SEÇİMİ -->
+      <div class="form-group">
+        <label>Kitap Türü *</label>
+        <div class="type-btn-group" id="uTypeGroup">
+          <button type="button" class="type-btn" data-type="ders-kitabi">📘 Ders Kitabı</button>
+          <button type="button" class="type-btn" data-type="ders-anlatim">📖 Ders Anlatımı</button>
+          <button type="button" class="type-btn" data-type="soru-bankasi">🗂 Soru Bankası</button>
+          <button type="button" class="type-btn" data-type="deneme">📝 Deneme</button>
+          <button type="button" class="type-btn" data-type="foy">📋 Föy</button>
+          <button type="button" class="type-btn" data-type="hikaye">📚 Hikaye</button>
+          <button type="button" class="type-btn" data-type="ansiklopedi">🌐 Ansiklopedi</button>
         </div>
-        <div class="form-group">
-          <label>Kategori *</label>
-          <select class="modal-input" id="uCategory">
-            <option value="">Seçin</option>
-            <option value="ders-kitabi">Ders Kitabı</option>
-            <option value="ders-anlatim">Ders Anlatım Kitabı</option>
-            <option value="deneme">Deneme Testi</option>
-            <option value="soru-bankasi">Soru Bankası</option>
-            <option value="foy">Föyler</option>
-            <option value="hikaye">Hikaye Kitabı</option>
-            <option value="ansiklopedi">Ansiklopedi</option>
-            <option value="tyt">TYT</option>
-            <option value="ayt">AYT</option>
-            <option value="tyt-ayt">TYT + AYT</option>
-            <option value="kpss">KPSS</option>
-          </select>
-        </div>
+        <input type="hidden" id="uBookType" />
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Ders / Konu</label>
-          <select class="modal-input" id="uSubject">
-            <option value="">Seçin</option>
-            <option value="matematik">Matematik</option>
-            <option value="turkce">Türkçe</option>
-            <option value="fizik">Fizik</option>
-            <option value="kimya">Kimya</option>
-            <option value="biyoloji">Biyoloji</option>
-            <option value="tarih">Tarih</option>
-            <option value="cografya">Coğrafya</option>
-            <option value="felsefe">Felsefe</option>
-            <option value="ingilizce">İngilizce</option>
-            <option value="edebiyat">Edebiyat</option>
-            <option value="geometri">Geometri</option>
-          </select>
+
+      <!-- SINAV KATEGORİSİ (sadece ders türlerinde göster) -->
+      <div class="form-group hidden" id="uExamGroup">
+        <label>Sınav Kategorisi</label>
+        <div class="type-btn-group" id="uExamBtnGroup">
+          <button type="button" class="type-btn exam-btn" data-exam="">Genel</button>
+          <button type="button" class="type-btn exam-btn" data-exam="tyt">🎯 TYT</button>
+          <button type="button" class="type-btn exam-btn" data-exam="ayt">🎯 AYT</button>
+          <button type="button" class="type-btn exam-btn" data-exam="tyt-ayt">🎯 TYT+AYT</button>
+          <button type="button" class="type-btn exam-btn" data-exam="kpss">🏛 KPSS</button>
         </div>
-        <div class="form-group">
-          <label>Yayınevi</label>
-          <input type="text" class="modal-input" id="uPublisher" placeholder="Yayınevi adı" />
-        </div>
+        <input type="hidden" id="uExamCat" value="" />
+      </div>
+
+      <!-- SINIF (hikaye ve ansiklopedi hariç) -->
+      <div class="form-group hidden" id="uGradeGroup">
+        <label>Sınıf</label>
+        <select class="modal-input" id="uGrade">
+          <option value="">Seçin (opsiyonel)</option>
+          <option value="5">5. Sınıf</option>
+          <option value="6">6. Sınıf</option>
+          <option value="7">7. Sınıf</option>
+          <option value="8">8. Sınıf</option>
+          <option value="9">9. Sınıf</option>
+          <option value="10">10. Sınıf</option>
+          <option value="11">11. Sınıf</option>
+          <option value="12">12. Sınıf</option>
+          <option value="mezun">Mezun</option>
+        </select>
+      </div>
+
+      <!-- DERS / BÖLÜM (hikaye ve ansiklopedi hariç) -->
+      <div class="form-group hidden" id="uSubjectGroup">
+        <label>Ders / Bölüm</label>
+        <select class="modal-input" id="uSubject">
+          <option value="">Seçin (opsiyonel)</option>
+          <option value="matematik">Matematik</option>
+          <option value="turkce">Türkçe</option>
+          <option value="fizik">Fizik</option>
+          <option value="kimya">Kimya</option>
+          <option value="biyoloji">Biyoloji</option>
+          <option value="tarih">Tarih</option>
+          <option value="cografya">Coğrafya</option>
+          <option value="felsefe">Felsefe</option>
+          <option value="ingilizce">İngilizce</option>
+          <option value="edebiyat">Edebiyat</option>
+          <option value="geometri">Geometri</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Yayınevi</label>
+        <input type="text" class="modal-input" id="uPublisher" placeholder="Yayınevi adı" />
       </div>
       <div class="form-group">
         <label>Kapak Fotoğrafı</label>

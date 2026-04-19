@@ -183,6 +183,108 @@ window.deleteBook = function(id, event) {
   booksRef.child(id).remove();
 };
 
+// ── CLOUDINARY CONFIG ──
+const CLOUDINARY_CLOUD = "ddeisebyz";
+const CLOUDINARY_PRESET = "Kök";
+const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`;
+
+// ── COVER FILE UPLOAD UI ──
+let selectedCoverFile = null;
+let uploadedCoverUrl = "";
+
+const coverDropZone = document.getElementById("coverDropZone");
+const coverFileInput = document.getElementById("uCoverFile");
+const coverPreviewWrap = document.getElementById("coverPreviewWrap");
+const coverPreviewImg = document.getElementById("coverPreviewImg");
+const coverPlaceholder = document.getElementById("coverPlaceholder");
+const coverProgress = document.getElementById("coverProgress");
+const coverProgressBar = document.getElementById("coverProgressBar");
+const coverProgressText = document.getElementById("coverProgressText");
+
+coverDropZone.addEventListener("click", () => coverFileInput.click());
+
+coverDropZone.addEventListener("dragover", e => {
+  e.preventDefault();
+  coverDropZone.style.borderColor = "var(--accent)";
+});
+coverDropZone.addEventListener("dragleave", () => {
+  coverDropZone.style.borderColor = "";
+});
+coverDropZone.addEventListener("drop", e => {
+  e.preventDefault();
+  coverDropZone.style.borderColor = "";
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith("image/")) setCoverFile(file);
+});
+
+coverFileInput.addEventListener("change", e => {
+  const file = e.target.files[0];
+  if (file) setCoverFile(file);
+});
+
+document.getElementById("coverRemoveBtn").addEventListener("click", e => {
+  e.stopPropagation();
+  clearCoverFile();
+});
+
+function setCoverFile(file) {
+  selectedCoverFile = file;
+  uploadedCoverUrl = "";
+  const reader = new FileReader();
+  reader.onload = ev => {
+    coverPreviewImg.src = ev.target.result;
+    coverPreviewWrap.style.display = "flex";
+    coverPlaceholder.style.display = "none";
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearCoverFile() {
+  selectedCoverFile = null;
+  uploadedCoverUrl = "";
+  coverPreviewWrap.style.display = "none";
+  coverPlaceholder.style.display = "flex";
+  coverFileInput.value = "";
+}
+
+async function uploadCoverToCloudinary(file) {
+  return new Promise((resolve, reject) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", CLOUDINARY_PRESET);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", CLOUDINARY_URL);
+
+    coverProgress.classList.remove("hidden");
+    coverProgressBar.style.width = "0%";
+    coverProgressText.textContent = "Yükleniyor…";
+
+    xhr.upload.addEventListener("progress", e => {
+      if (e.lengthComputable) {
+        const pct = Math.round((e.loaded / e.total) * 100);
+        coverProgressBar.style.width = pct + "%";
+        coverProgressText.textContent = `Yükleniyor… %${pct}`;
+      }
+    });
+
+    xhr.onload = () => {
+      coverProgress.classList.add("hidden");
+      if (xhr.status === 200) {
+        const res = JSON.parse(xhr.responseText);
+        resolve(res.secure_url);
+      } else {
+        reject(new Error("Cloudinary yükleme hatası: " + xhr.status));
+      }
+    };
+    xhr.onerror = () => {
+      coverProgress.classList.add("hidden");
+      reject(new Error("Ağ hatası oluştu."));
+    };
+    xhr.send(formData);
+  });
+}
+
 // ── UPLOAD BOOK ──
 document.getElementById("uploadBookBtn").addEventListener("click", async () => {
   const title = document.getElementById("uTitle").value.trim();
@@ -190,7 +292,6 @@ document.getElementById("uploadBookBtn").addEventListener("click", async () => {
   const category = document.getElementById("uCategory").value;
   const subject = document.getElementById("uSubject").value;
   const publisher = document.getElementById("uPublisher").value.trim();
-  const cover = document.getElementById("uCover").value.trim();
   const link = document.getElementById("uLink").value.trim();
   const featured = document.getElementById("uFeatured").value === "true";
   const errEl = document.getElementById("uploadError");
@@ -205,7 +306,17 @@ document.getElementById("uploadBookBtn").addEventListener("click", async () => {
   btn.textContent = "Yükleniyor…";
   btn.disabled = true;
 
+  let cover = uploadedCoverUrl;
+
   try {
+    // Eğer yeni dosya seçildiyse önce Cloudinary'e yükle
+    if (selectedCoverFile && !uploadedCoverUrl) {
+      btn.textContent = "Kapak yükleniyor…";
+      cover = await uploadCoverToCloudinary(selectedCoverFile);
+      uploadedCoverUrl = cover;
+    }
+
+    btn.textContent = "Kaydediliyor…";
     await booksRef.push({
       title, grade, category, subject, publisher, cover, link, featured,
       createdAt: Date.now()
@@ -214,7 +325,7 @@ document.getElementById("uploadBookBtn").addEventListener("click", async () => {
     clearUploadForm();
     alert("✅ Kitap başarıyla eklendi!");
   } catch (err) {
-    showUploadError("Firebase hatası: " + err.message);
+    showUploadError(err.message || "Bir hata oluştu.");
   } finally {
     btn.textContent = "📤 Kitabı Yükle";
     btn.disabled = false;
@@ -228,11 +339,12 @@ function showUploadError(msg) {
 }
 
 function clearUploadForm() {
-  ["uTitle","uGrade","uCategory","uSubject","uPublisher","uCover","uLink"].forEach(id => {
+  ["uTitle","uGrade","uCategory","uSubject","uPublisher","uLink"].forEach(id => {
     document.getElementById(id).value = "";
   });
   document.getElementById("uFeatured").value = "false";
   document.getElementById("uploadError").classList.add("hidden");
+  clearCoverFile();
 }
 
 // ── ADMIN LOGIN ──

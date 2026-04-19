@@ -231,8 +231,25 @@
         </div>
       </div>
       <div class="form-group">
-        <label>Kapak Fotoğrafı URL'si</label>
-        <input type="url" class="modal-input" id="uCover" placeholder="https://…" />
+        <label>Kapak Fotoğrafı</label>
+        <div class="cover-upload-area" id="coverUploadArea">
+          <input type="file" id="uCoverFile" accept="image/*" style="display:none" />
+          <div class="cover-drop-zone" id="coverDropZone">
+            <div class="cover-preview-wrap" id="coverPreviewWrap" style="display:none">
+              <img id="coverPreviewImg" src="" alt="Önizleme" class="cover-preview-img" />
+              <button type="button" class="cover-remove-btn" id="coverRemoveBtn">✕</button>
+            </div>
+            <div class="cover-placeholder" id="coverPlaceholder">
+              <span class="cover-upload-icon">🖼</span>
+              <span>Fotoğraf seç veya sürükle bırak</span>
+              <span class="cover-hint">JPG, PNG, WEBP — max 10MB</span>
+            </div>
+          </div>
+          <div class="cover-upload-progress hidden" id="coverProgress">
+            <div class="cover-progress-bar" id="coverProgressBar"></div>
+            <span id="coverProgressText">Yükleniyor…</span>
+          </div>
+        </div>
       </div>
       <div class="form-group">
         <label>İndirme / Erişim Linki *</label>
